@@ -1,10 +1,6 @@
 {
-    "admin": {
-        "username": "admin_user",
-        "password": "admin_pass"
-    },
     "user": {
-        "username": "user_user",
-        "password": "user_pass"
+        "username": "bobadesagarwd@gmail.com",
+        "password": "Pass@123"
     }
 }
