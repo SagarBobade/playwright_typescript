@@ -12,13 +12,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('should not be able to login with invalid credentials', async ({ page }) => {
-    await loginPage.navigateTo('');
+    await loginPage.navigateTo('client/#/auth/login');
+    console.log("Current URL:- "+page.url());
     await loginPage.login('invalidUser@gmail.com', 'invalidPass');
     //TODO: Have assertion on toast message
 });
 
 test('should be login and navigate to dashboard', async ({page}) => {
-    await loginPage.navigateTo('');
+    await loginPage.navigateTo('client/#/auth/login');
     await loginPage.login('bobadesagarwd@gmail.com', 'Pass@123');
     await loginPage.waitForUrl('dashboard');
     await expect(loginPage.page).toHaveTitle("Let's Shop");
