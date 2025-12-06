@@ -11,11 +11,11 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [
     ["list"], // console summary
-    ['allure-playwright', {
-      resultsDir: 'allure-results',
-      detail: true,
-      suiteTitle: true
-    }],
+    // ['allure-playwright', {
+    //   resultsDir: 'allure-results',
+    //   detail: true,
+    //   suiteTitle: true
+    // }],
     ['monocart-reporter', {
       name: 'Hybrid Playwright Report',
       outputFile: 'reports/monocart-report.html'
@@ -24,6 +24,11 @@ export default defineConfig({
   use: {
     baseURL: 'https://rahulshettyacademy.com/',
     trace: 'on-first-retry',
+    channel: 'chrome',
+    headless: false,
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    viewport: { width: 1280, height: 720 }, 
   },
 
   projects: [
