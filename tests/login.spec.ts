@@ -1,20 +1,26 @@
 import { expect } from "@playwright/test";
 import { test } from "../fixtures/auth.fixture";
 import { LoginPage } from "../pages/LoginPage";
+import { Header } from "../pages/components/Header";
 
 let loginPage: LoginPage;
+let headerPage: Header;
 
 test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
+    headerPage = new Header(page);
+
 });
 
-test.skip('has title', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
-  await expect(page).toHaveTitle(/Playwright/);
+test('should not be able to login with invalid credentials', async () => {
+    await loginPage.navigateTo('https://rahulshettyacademy.com/client/#/auth/login');
+    await loginPage.login('invalidUser@gmail.com', 'invalidPass');
+    //TODO: Have assertion on toast message
 });
 
-test('sample test', async ({ page }) => {
-    await page.goto('https://rahulshettyacademy.com/client/#/auth/login');
+test('should be login and navigate to dashboard', async ({page}) => {
+    await loginPage.navigateTo('https://rahulshettyacademy.com/client/#/auth/login');
     await loginPage.login('bobadesagarwd@gmail.com', 'Pass@123');
-    await expect(page).toHaveTitle("Let's Shop");
+    await loginPage.waitForUrl('dashboard');
+    await expect(loginPage.page).toHaveTitle("Let's Shop");
 });
