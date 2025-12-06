@@ -9,17 +9,16 @@ let headerPage: Header;
 test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
     headerPage = new Header(page);
-
 });
 
-test('should not be able to login with invalid credentials', async () => {
-    await loginPage.navigateTo('https://rahulshettyacademy.com/client/#/auth/login');
+test('should not be able to login with invalid credentials', async ({ page }) => {
+    await loginPage.navigateTo('');
     await loginPage.login('invalidUser@gmail.com', 'invalidPass');
     //TODO: Have assertion on toast message
 });
 
 test('should be login and navigate to dashboard', async ({page}) => {
-    await loginPage.navigateTo('https://rahulshettyacademy.com/client/#/auth/login');
+    await loginPage.navigateTo('');
     await loginPage.login('bobadesagarwd@gmail.com', 'Pass@123');
     await loginPage.waitForUrl('dashboard');
     await expect(loginPage.page).toHaveTitle("Let's Shop");
