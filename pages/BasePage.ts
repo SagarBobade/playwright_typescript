@@ -12,7 +12,7 @@ export default class BasePage {
         return this.page.locator(selector);
     }
 
-    async navigateTo(url: string) {
+    async navigateTo(url: string = '') {
         await this.page.goto(url);
     }
 

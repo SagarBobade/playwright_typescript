@@ -1,8 +1,8 @@
 export default {
-  baseURL: "https://dev.yourapp.com",
+  baseURL: "https://rahulshettyacademy.com/",
   apiURL: "https://dev-api.yourapp.com",
-  users: {
-    admin: "dev-admin@mail.com",
-    default: "dev-user@mail.com"
+  user: {
+    email: "Test@gmail.com",
+    password: "Pass@123"
   }
 }

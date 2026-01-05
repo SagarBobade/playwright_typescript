@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-//const ENV = process.env.ENV || "dev";   
+const ENV = process.env.ENV || "dev";   
 
 export default defineConfig({
   testDir: './tests',
