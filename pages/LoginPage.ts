@@ -12,7 +12,7 @@ export class LoginPage extends BasePage {
         await this.type(this.inputUsername, username);
         await this.type(this.inputPassword, password);
         await this.click(this.btnLogin);
-        await this.waitForPageLoad();
+        //await this.waitForPageLoad();
     }
 
     async isLoggedIn(): Promise<boolean> {
