@@ -23,6 +23,7 @@ test.describe.serial('Login Tests', () => {
     test('should not be able to login with invalid credentials', async ({ page }) => {
         await loginPage.navigateTo('client/#/auth/login');
         console.log("Current URL:- "+page.url());
+        console.log("I'm in 1st Test");
         await loginPage.login('invalidUser@gmail.com', 'invalidPass');
         //TODO: Have assertion on toast message
     });
@@ -32,6 +33,7 @@ test.describe.serial('Login Tests', () => {
         const user = getUser();
         await loginPage.login(user.email, user.password);
         await loginPage.waitForUrl('dashboard');
+        console.log("I'm in 2nd Test");
         await expect(loginPage.page).toHaveTitle("Let's Shop");
     });
 
