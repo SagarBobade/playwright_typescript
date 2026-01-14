@@ -55,11 +55,14 @@ jobs:
       # ---------------- RUN TESTS ----------------
       - name: Run Playwright Tests
         run: |
+          echo "Running tests with environment: ${{ inputs.env || 'qa' }}"
+          echo "Test directory: ./tests/"
           npx playwright test ./tests/ \
-            --config=config/${{ inputs.env || 'qa' }}.ts \
+            --config=playwright.config.ts \
             --shard=${{ matrix.shard }}/2
         env:
           CI: true
+          ENV: ${{ inputs.env || 'qa' }}
           BASE_URL: ${{ secrets.BASE_URL }}
           USERNAME: ${{ secrets.USERNAME }}
           PASSWORD: ${{ secrets.PASSWORD }} 
