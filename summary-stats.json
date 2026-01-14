@@ -1,8 +1,8 @@
 {
-  "totalManifested": 4,
+  "totalManifested": 6,
   "automated": 3,
-  "testCoverage": "75.00%",
+  "testCoverage": "50.00%",
   "shadowTestsCount": 0,
   "shadowTestsList": [],
-  "timestamp": "2026-01-14T14:51:52.561Z"
+  "timestamp": "2026-01-14T14:55:30.708Z"
 }
