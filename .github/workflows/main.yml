@@ -6,7 +6,9 @@ on:
   workflow_dispatch:     # Allows you to run this manually from the GitHub Actions tab
 
 permissions:
-  contents: write       # Vital: Allows the bot to commit changes back to the repo
+  contents: write
+  pages: write      
+  id-token: write   
 
 jobs:
   sync-and-deploy:
@@ -46,6 +48,15 @@ jobs:
             git commit -m "chore: auto-update test manifest and statistics [skip ci]"
             git push
           fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Upload the entire root directory (including updated JSON/YAML)
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       # 6. Deploy to GitHub Pages
       # Note: GitHub Pages usually tracks the 'main' branch or 'gh-pages' branch automatically.
