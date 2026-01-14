@@ -25,3 +25,17 @@
   automation: ui
   testFile: tests/login.spec.ts
   testName: should be login and navigate to dashboard
+- test_id: TC-003
+  title: Verify successful login and navigation to dashboard
+  priority: P3
+  tags:
+    - login
+    - positive
+    - authentication
+    - smoke
+  bugId: null
+  isAutomated: true
+  type: sanity
+  automation: ui
+  testFile: tests/login.spec.ts
+  testName: should be login and navigate to dashboard
