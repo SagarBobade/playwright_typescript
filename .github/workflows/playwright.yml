@@ -48,10 +48,9 @@ jobs:
         run: npx playwright install --with-deps
 
       # ---------------- ENV SETUP ----------------
-      - name: Load environment variables
+      - name: Set environment variable
         run: |
           echo "ENV=${{ inputs.env || 'qa' }}" >> $GITHUB_ENV
-          cat .env.${{ inputs.env || 'qa' }} >> $GITHUB_ENV
 
       # ---------------- RUN TESTS ----------------
       - name: Run Playwright Tests
