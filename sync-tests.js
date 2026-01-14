@@ -40,9 +40,12 @@ const codeIds = new Set();
 function scanDirectory(dir) {
     // Read all files and folders in the current directory
     const files = fs.readdirSync(dir);
+    console.log(`📁 Scanning directory: ${dir}`);
+    console.log(`   Found ${files.length} items:`, files);
     
     // Loop through each file/folder in the directory
     files.forEach(file => {
+        console.log(`   Processing: ${file}`);
         // Create full path by joining directory and filename
         const filePath = path.join(dir, file);
         // Get file/folder metadata (size, type, etc.)
@@ -50,20 +53,25 @@ function scanDirectory(dir) {
 
         // Check if current item is a directory (folder)
         if (stat.isDirectory()) {
+            console.log(`      ↳ Directory detected, recursing...`);
             // If it's a folder, recursively scan it
             scanDirectory(filePath);
         } 
-        // Check if current file has one of the configured extensions (.spec.ts, etc.)
-        else if (CONFIG.fileExtensions.includes(path.extname(file))) {
+        // Check if current file matches any of the test file patterns (.spec.ts, .test.js, etc.)
+        else if (CONFIG.fileExtensions.some(ext => file.endsWith(ext))) {
+            console.log(`      ↳ Test file matched!`);
             // Read the test file content as UTF-8 string
             const content = fs.readFileSync(filePath, 'utf8');
             // Find all matches of the test ID pattern (TC-XXX) in the file
             const matches = content.match(CONFIG.idRegex);
+            console.log(`      ↳ Found ${matches ? matches.length : 0} test IDs:`, matches);
             // If matches were found in this file
             if (matches) {
                 // Add each found test ID to the Set (duplicates automatically ignored)
                 matches.forEach(id => codeIds.add(id));
             }
+        } else {
+            console.log(`      ↳ Skipped (not a test file), extension: ${path.extname(file)}`);
         }
     });
 }

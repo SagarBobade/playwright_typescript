@@ -1,21 +1,27 @@
-  - test_id: "TC-001"
-    title: Verify user cannot login with invalid credentials
-    priority: P0
-    tags: [login, negative, authentication]
-    bugId: null
-    isAutomated: true
-    type: sanity
-    automation: ui
-    testFile: tests/login.spec.ts
-    testName: should not be able to login with invalid credentials
-    
-  - test_id: "TC-002"
-    title: Verify successful login and navigation to dashboard
-    priority: P0
-    tags: [login, positive, authentication, smoke]
-    bugId: null
-    isAutomated: true
-    type: sanity
-    automation: ui
-    testFile: tests/login.spec.ts
-    testName: should be login and navigate to dashboard
+- test_id: TC-001
+  title: Verify user cannot login with invalid credentials
+  priority: P0
+  tags:
+    - login
+    - negative
+    - authentication
+  bugId: null
+  isAutomated: true
+  type: sanity
+  automation: ui
+  testFile: tests/login.spec.ts
+  testName: should not be able to login with invalid credentials
+- test_id: TC-002
+  title: Verify successful login and navigation to dashboard
+  priority: P0
+  tags:
+    - login
+    - positive
+    - authentication
+    - smoke
+  bugId: null
+  isAutomated: true
+  type: sanity
+  automation: ui
+  testFile: tests/login.spec.ts
+  testName: should be login and navigate to dashboard
