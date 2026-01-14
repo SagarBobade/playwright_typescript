@@ -1,0 +1,52 @@
+name: Sync Test Manifest & Deploy Dashboard
+
+on:
+  push:
+    branches: [ main ]  # Triggered whenever you push to the main branch
+  workflow_dispatch:     # Allows you to run this manually from the GitHub Actions tab
+
+permissions:
+  contents: write       # Vital: Allows the bot to commit changes back to the repo
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Pull the latest code
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Set up the Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Install the YAML parser
+      - name: Install Dependencies
+        run: npm install yaml
+
+      # 4. Run your Engine
+      - name: Run Sync Script
+        run: node sync-tests.js
+        # This will scan the code, update tests.yaml, and create summary-stats.json
+
+      # 5. Commit the updated data files back to the repo
+      - name: Commit Updated Manifest and Stats
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add tests.yaml summary-stats.json
+          # Only commit if there are actual changes to avoid empty commits
+          if git diff --staged --quiet; then
+            echo "No changes to manifest or stats."
+          else
+            git commit -m "chore: auto-update test manifest and statistics [skip ci]"
+            git push
+          fi
+
+      # 6. Deploy to GitHub Pages
+      # Note: GitHub Pages usually tracks the 'main' branch or 'gh-pages' branch automatically.
+      # If your index.html is in the root, it will update as soon as step 5 pushes.
