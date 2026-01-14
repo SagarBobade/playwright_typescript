@@ -169,7 +169,7 @@
     - authentication
     - smoke
   bugId: null
-  isAutomated: true
+  isAutomated: false
   type: sanity
   automation: ui
   testFile: tests/login.spec.ts
