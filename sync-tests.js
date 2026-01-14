@@ -125,11 +125,20 @@ const updatedYaml = YAML.stringify(manifest);
 // Write the updated YAML back to the file (overwrites existing content)
 fs.writeFileSync(CONFIG.yamlPath, updatedYaml);
 
+// Calculate Coverage Percentage
+const totalTests = yamlIds.length;
+const automatedCount = Array.from(codeIds).filter(id => yamlIds.includes(id)).length;
+// Avoid division by zero if manifest is empty
+const coveragePercent = totalTests > 0 ? ((automatedCount / totalTests) * 100).toFixed(2) : 0;
+
 // Create statistics object with current sync results
 const stats = {
-    totalManifested: yamlIds.length,  // Total number of tests defined in YAML
-    automated: Array.from(codeIds).filter(id => yamlIds.includes(id)).length,  // Count of tests both in YAML and code
-    timestamp: new Date().toISOString()  // ISO format timestamp of when sync ran
+    totalManifested: totalTests,
+    automated: automatedCount,
+    testCoverage: `${coveragePercent}%`, // The "Single Number" for stakeholders
+    shadowTestsCount: missingInYaml.length,
+    shadowTestsList: missingInYaml,
+    timestamp: new Date().toISOString()
 };
 
 // Write statistics to a JSON file for tracking/reporting purposes

@@ -1,5 +1,8 @@
 {
   "totalManifested": 2,
   "automated": 2,
-  "timestamp": "2026-01-14T10:48:41.262Z"
+  "testCoverage": "100.00%",
+  "shadowTestsCount": 0,
+  "shadowTestsList": [],
+  "timestamp": "2026-01-14T13:34:22.087Z"
 }
