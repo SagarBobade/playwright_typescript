@@ -55,7 +55,7 @@ jobs:
       # ---------------- RUN TESTS ----------------
       - name: Run Playwright Tests
         run: |
-          npx playwright test \
+          npx playwright test ./tests/ \
             --config=config/${{ inputs.env || 'qa' }}.ts \
             --shard=${{ matrix.shard }}/2
         env:
