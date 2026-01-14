@@ -20,7 +20,7 @@ test.describe.serial('Login Tests', () => {
         page.close();
     });
 
-    test('should not be able to login with invalid credentials @TC-001', async ({ page }) => {
+    test('should not be able to login with invalid credentials @TC-008', async ({ page }) => {
         await loginPage.navigateTo('client/#/auth/login');
         console.log("Current URL:- "+page.url());
         console.log("I'm in 1st Test");
@@ -28,7 +28,7 @@ test.describe.serial('Login Tests', () => {
         //TODO: Have assertion on toast message
     });
 
-    test('should be login and navigate to dashboard @TC-002', async () => {
+    test('should be login and navigate to dashboard @TC-009', async () => {
         await loginPage.navigateTo('client/#/auth/login');
         const user = getUser();
         await loginPage.login(user.email, user.password);
@@ -37,7 +37,7 @@ test.describe.serial('Login Tests', () => {
         await expect(loginPage.page).toHaveTitle("Let's Shop");
     });
 
-    test('should be login and navigate to dashboard @TC-003', async () => {
+    test('should be login and navigate to dashboard @TC-010', async () => {
         await loginPage.navigateTo('client/#/auth/login');
         const user = getUser();
         await loginPage.login(user.email, user.password);
