@@ -1,7 +1,7 @@
 {
   "name": "playwright2025",
   "version": "1.0.0",
-  "description": "",
+  "description": "git clone https://github.com/SagarBobade/playwright_typescript.git cd playwright_typescript",
   "main": "index.js",
   "scripts": {
     "tests": "npx playwright test ./tests/login.spec.ts  --debug --ui"
@@ -14,5 +14,11 @@
     "@types/node": "^24.10.1",
     "allure-playwright": "^3.4.3",
     "monocart-reporter": "^2.9.23"
+  },
+  "dependencies": {
+    "yaml": "^2.8.2"
+  },
+  "directories": {
+    "test": "tests"
   }
 }
