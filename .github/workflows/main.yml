@@ -8,7 +8,11 @@ on:
 permissions:
   contents: write
   pages: write      
-  id-token: write   
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   sync-and-deploy:
