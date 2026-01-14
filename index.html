@@ -1,24 +1,74 @@
-<table>
-    <thead>
-        <tr>
-            <th>Test ID</th>
-            <th>Feature</th>
-            <th>Priority</th>
-            <th>Tags</th> <th>Status</th>
-            <th>Known Bug</th>
-            <th>Type</th>
-        </tr>
-    </thead>
-    <tbody id="test-table-body">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #4CAF50; color: white; }
+        tr:hover { background-color: #f5f5f5; }
+        .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .automated { background: #27ae60; color: white; }
+        .manual { background: #95a5a6; color: white; }
+        .priority-label { font-weight: bold; }
+        #stats { display: flex; gap: 20px; margin-bottom: 20px; }
+        .stat-card { padding: 15px; background: #f0f0f0; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Tests Dashboard</h1>
+    
+    <div id="stats">
+        <div class="stat-card">
+            <h3>Total Tests</h3>
+            <p id="total-tests">-</p>
+        </div>
+        <div class="stat-card">
+            <h3>Automated</h3>
+            <p id="automated-count">-</p>
+        </div>
+        <div class="stat-card">
+            <h3>Coverage</h3>
+            <p id="coverage-percent">-</p>
+        </div>
+    </div>
+    
+    <div id="shadow-alert" style="display:none; background:#e74c3c; color:white; padding:10px; border-radius:5px; margin-bottom:20px;">
+        ⚠️ Shadow tests detected: <span id="shadow-list"></span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Test ID</th>
+                <th>Title</th>
+                <th>Priority</th>
+                <th>Tags</th>
+                <th>Bug ID</th>
+                <th>Type</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="test-table-body">
         </tbody>
-</table>
+    </table>
 
 <script>
     async function loadDashboard() {
         try {
+            console.log('Starting to load dashboard...');
+            
             // 1. Fetch JSON Stats (KPIs)
+            console.log('Fetching summary-stats.json...');
             const statsRes = await fetch('./summary-stats.json');
+            console.log('Stats response:', statsRes.status, statsRes.ok);
+            if (!statsRes.ok) throw new Error(`Failed to fetch summary-stats.json: ${statsRes.status}`);
             const stats = await statsRes.json();
+            console.log('Stats loaded:', stats);
             
             document.getElementById('total-tests').innerText = stats.totalManifested;
             document.getElementById('automated-count').innerText = stats.automated;
@@ -30,9 +80,15 @@
             }
 
             // 2. Fetch and Parse YAML (Detailed Manifest)
-            const yamlRes = await fetch('./tests.yaml');
+            console.log('Fetching tests.yml...');
+            const yamlRes = await fetch('./tests.yml');
+            console.log('YAML response:', yamlRes.status, yamlRes.ok);
+            if (!yamlRes.ok) throw new Error(`Failed to fetch tests.yml: ${yamlRes.status}`);
             const yamlText = await yamlRes.text();
+            console.log('YAML text loaded, length:', yamlText.length);
+            console.log('First 100 chars:', yamlText.substring(0, 100));
             const tests = jsyaml.load(yamlText);
+            console.log('YAML parsed, tests:', tests);
 
             const tableBody = document.getElementById('test-table-body');
             tableBody.innerHTML = ''; // Clear existing content
@@ -46,18 +102,16 @@
                 const row = `
                     <tr>
                         <td><strong>${test.test_id}</strong></td>
-                        <td>${test.feature}</td>
+                        <td>${test.title || '-'}</td>
                         <td><span class="priority-label">${test.priority}</span></td>
                         <td>${tagHtml}</td>
-                        <td style="color: ${test.last_status === 'Passed' ? '#27ae60' : '#e74c3c'}; font-weight:bold;">
-                            ${test.last_status}
-                        </td>
                         <td>
-                            ${test.known_bug_id ? `<a href="YOUR_JIRA_URL/${test.known_bug_id}" target="_blank" style="color:#3498db; text-decoration:none;">${test.known_bug_id}</a>` : '-'}
+                            ${test.bugId ? `<a href="YOUR_JIRA_URL/${test.bugId}" target="_blank" style="color:#3498db; text-decoration:none;">${test.bugId}</a>` : '-'}
                         </td>
+                        <td>${test.type || '-'}</td>
                         <td>
                             <span class="status-pill ${test.isAutomated ? 'automated' : 'manual'}">
-                                ${test.isAutomated ? 'AUTOMATED' : 'PLANNED'}
+                                ${test.isAutomated ? 'AUTOMATED' : 'MANUAL'}
                             </span>
                         </td>
                     </tr>
@@ -67,9 +121,11 @@
 
         } catch (err) {
             console.error("Failed to load dashboard data:", err);
-            document.body.innerHTML += `<p style="color:red; padding:20px;">Error loading data. Check if tests.yaml and summary-stats.json exist in the root folder.</p>`;
+            document.body.innerHTML += `<p style="color:red; padding:20px;">Error loading data. Check if tests.yml and summary-stats.json exist in the root folder.</p>`;
         }
     }
 
     loadDashboard();
 </script>
+</body>
+</html>
