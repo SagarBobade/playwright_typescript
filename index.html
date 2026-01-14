@@ -1,101 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E2E Quality Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-    <style>
-        body { font-family: -apple-system, sans-serif; background: #f4f7f9; padding: 40px; color: #333; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
-        .card h3 { margin: 0; font-size: 14px; color: #666; text-transform: uppercase; }
-        .card p { margin: 10px 0 0; font-size: 32px; font-weight: bold; color: #2c3e50; }
-        .coverage-high { color: #27ae60 !important; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #f8f9fa; font-weight: 600; }
-        .status-pill { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .automated { background: #e8f5e9; color: #2e7d32; }
-        .manual { background: #fff3e0; color: #ef6c00; }
-        .alert { background: #fee2e2; border: 1px solid #ef4444; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #991b1b; }
-    </style>
-</head>
-<body>
+<table>
+    <thead>
+        <tr>
+            <th>Test ID</th>
+            <th>Feature</th>
+            <th>Priority</th>
+            <th>Tags</th> <th>Status</th>
+            <th>Known Bug</th>
+            <th>Type</th>
+        </tr>
+    </thead>
+    <tbody id="test-table-body">
+        </tbody>
+</table>
 
-    <h1>🚀 E2E Test Insights</h1>
-    
-    <div id="stats-grid" class="grid">
-        <div class="card"><h3>Total Manifested</h3><p id="total-tests">-</p></div>
-        <div class="card"><h3>Automated</h3><p id="automated-count">-</p></div>
-        <div class="card"><h3>Test Coverage</h3><p id="coverage-percent" class="coverage-high">-</p></div>
-    </div>
+<script>
+    async function loadDashboard() {
+        try {
+            // 1. Fetch JSON Stats (KPIs)
+            const statsRes = await fetch('./summary-stats.json');
+            const stats = await statsRes.json();
+            
+            document.getElementById('total-tests').innerText = stats.totalManifested;
+            document.getElementById('automated-count').innerText = stats.automated;
+            document.getElementById('coverage-percent').innerText = stats.testCoverage;
 
-    <div id="shadow-alert" class="alert" style="display: none;">
-        <strong>⚠️ Shadow Tests Found:</strong> These IDs exist in code but are not registered in YAML: <span id="shadow-list"></span>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Test ID</th>
-                <th>Feature</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Known Bug</th>
-                <th>Type</th>
-            </tr>
-        </thead>
-        <tbody id="test-table-body">
-            </tbody>
-    </table>
-
-    <script>
-        async function loadDashboard() {
-            try {
-                // 1. Fetch JSON Stats
-                const statsRes = await fetch('./summary-stats.json');
-                const stats = await statsRes.json();
-                
-                document.getElementById('total-tests').innerText = stats.totalManifested;
-                document.getElementById('automated-count').innerText = stats.automated;
-                document.getElementById('coverage-percent').innerText = stats.testCoverage;
-
-                if (stats.shadowTestsCount > 0) {
-                    document.getElementById('shadow-alert').style.display = 'block';
-                    document.getElementById('shadow-list').innerText = stats.shadowTestsList.join(', ');
-                }
-
-                // 2. Fetch and Parse YAML
-                const yamlRes = await fetch('./tests.yaml');
-                const yamlText = await yamlRes.text();
-                const tests = jsyaml.load(yamlText);
-
-                const tableBody = document.getElementById('test-table-body');
-                tests.forEach(test => {
-                    const row = `
-                        <tr>
-                            <td><strong>${test.test_id}</strong></td>
-                            <td>${test.feature}</td>
-                            <td>${test.priority}</td>
-                            <td>${test.last_status}</td>
-                            <td>${test.known_bug_id || '-'}</td>
-                            <td>
-                                <span class="status-pill ${test.isAutomated ? 'automated' : 'manual'}">
-                                    ${test.isAutomated ? 'AUTOMATED' : 'PLANNED'}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-
-            } catch (err) {
-                console.error("Failed to load dashboard data:", err);
+            if (stats.shadowTestsCount > 0) {
+                document.getElementById('shadow-alert').style.display = 'block';
+                document.getElementById('shadow-list').innerText = stats.shadowTestsList.join(', ');
             }
-        }
 
-        loadDashboard();
-    </script>
-</body>
-</html>
+            // 2. Fetch and Parse YAML (Detailed Manifest)
+            const yamlRes = await fetch('./tests.yaml');
+            const yamlText = await yamlRes.text();
+            const tests = jsyaml.load(yamlText);
+
+            const tableBody = document.getElementById('test-table-body');
+            tableBody.innerHTML = ''; // Clear existing content
+
+            tests.forEach(test => {
+                // Logic to handle tags and turn them into small badges
+                const tagHtml = (test.tags || [])
+                    .map(tag => `<span style="background:#eee; padding:2px 6px; border-radius:10px; font-size:10px; margin-right:4px; border:1px solid #ddd;">${tag}</span>`)
+                    .join('');
+
+                const row = `
+                    <tr>
+                        <td><strong>${test.test_id}</strong></td>
+                        <td>${test.feature}</td>
+                        <td><span class="priority-label">${test.priority}</span></td>
+                        <td>${tagHtml}</td>
+                        <td style="color: ${test.last_status === 'Passed' ? '#27ae60' : '#e74c3c'}; font-weight:bold;">
+                            ${test.last_status}
+                        </td>
+                        <td>
+                            ${test.known_bug_id ? `<a href="YOUR_JIRA_URL/${test.known_bug_id}" target="_blank" style="color:#3498db; text-decoration:none;">${test.known_bug_id}</a>` : '-'}
+                        </td>
+                        <td>
+                            <span class="status-pill ${test.isAutomated ? 'automated' : 'manual'}">
+                                ${test.isAutomated ? 'AUTOMATED' : 'PLANNED'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+        } catch (err) {
+            console.error("Failed to load dashboard data:", err);
+            document.body.innerHTML += `<p style="color:red; padding:20px;">Error loading data. Check if tests.yaml and summary-stats.json exist in the root folder.</p>`;
+        }
+    }
+
+    loadDashboard();
+</script>
