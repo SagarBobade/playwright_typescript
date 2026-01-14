@@ -31,14 +31,14 @@ jobs:
       # 4. Run your Engine
       - name: Run Sync Script
         run: node sync-tests.js
-        # This will scan the code, update tests.yaml, and create summary-stats.json
+        # This will scan the code, update tests.yml, and create summary-stats.json
 
       # 5. Commit the updated data files back to the repo
       - name: Commit Updated Manifest and Stats
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add tests.yaml summary-stats.json
+          git add tests.yml summary-stats.json
           # Only commit if there are actual changes to avoid empty commits
           if git diff --staged --quiet; then
             echo "No changes to manifest or stats."
