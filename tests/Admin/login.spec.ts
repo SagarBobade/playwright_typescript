@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
-import { test } from "../fixtures/auth.fixture";
-import { LoginPage } from "../pages/LoginPage";
-import { Header } from "../pages/components/Header";
-import { getUser } from "../data/test-data";
+import { test } from "../../fixtures/auth.fixture";
+import { LoginPage } from "../../pages/LoginPage";
+import { Header } from "../../pages/components/Header";
+import { getUser } from "../../data/test-data";
 
 
 
