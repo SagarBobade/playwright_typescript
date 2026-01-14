@@ -89,11 +89,14 @@
             console.log('First 100 chars:', yamlText.substring(0, 100));
             const tests = jsyaml.load(yamlText);
             console.log('YAML parsed, tests:', tests);
+            console.log('Number of tests:', tests.length);
+            console.log('Test IDs:', tests.map(t => t.test_id));
 
             const tableBody = document.getElementById('test-table-body');
             tableBody.innerHTML = ''; // Clear existing content
 
-            tests.forEach(test => {
+            tests.forEach((test, index) => {
+                console.log(`Rendering test ${index + 1}:`, test.test_id);
                 // Logic to handle tags and turn them into small badges
                 const tagHtml = (test.tags || [])
                     .map(tag => `<span style="background:#eee; padding:2px 6px; border-radius:10px; font-size:10px; margin-right:4px; border:1px solid #ddd;">${tag}</span>`)

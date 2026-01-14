@@ -125,9 +125,14 @@ const updatedYaml = YAML.stringify(manifest);
 // Write the updated YAML back to the file (overwrites existing content)
 fs.writeFileSync(CONFIG.yamlPath, updatedYaml);
 
-// Calculate Coverage Percentage
+// Calculate Coverage Percentage based on isAutomated flag
 const totalTests = yamlIds.length;
-const automatedCount = Array.from(codeIds).filter(id => yamlIds.includes(id)).length;
+console.log('Debug - yamlIds:', yamlIds);
+console.log('Debug - yamlIds.length:', totalTests);
+// Count tests marked as automated in the manifest
+const automatedCount = manifest.filter(test => test.isAutomated === true).length;
+console.log('Debug - manifest.length:', manifest.length);
+console.log('Debug - automatedCount:', automatedCount);
 // Avoid division by zero if manifest is empty
 const coveragePercent = totalTests > 0 ? ((automatedCount / totalTests) * 100).toFixed(2) : 0;
 
