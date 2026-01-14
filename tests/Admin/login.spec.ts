@@ -46,4 +46,13 @@ test.describe.serial('Login Tests', () => {
         await expect(loginPage.page).toHaveTitle("Let's Shop");
     });
 
+    test('should be login and navigate to dashboard @TC-011', async () => {
+        await loginPage.navigateTo('client/#/auth/login');
+        const user = getUser();
+        await loginPage.login(user.email, user.password);
+        await loginPage.waitForUrl('dashboard');
+        console.log("I'm in 3rd Test");
+        await expect(loginPage.page).toHaveTitle("Let's Shop");
+    });
+
 });
