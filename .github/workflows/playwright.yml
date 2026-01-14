@@ -64,18 +64,14 @@ jobs:
           USERNAME: ${{ secrets.USERNAME }}
           PASSWORD: ${{ secrets.PASSWORD }} 
 
-      # ---------------- ALLURE REPORT ----------------
-      - name: Generate Allure Report
-        if: always()
-        run: npm run allure:generate
-
-      # ---------------- UPLOAD ALLURE ARTIFACT ----------------
-      - name: Upload Allure Report
+      # ---------------- UPLOAD PLAYWRIGHT REPORT ----------------
+      - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: allure-report-${{ matrix.shard }}
-          path: reports/allure-report
+          name: playwright-report-${{ matrix.shard }}
+          path: playwright-report
+          retention-days: 30
 
       # ---------------- UPLOAD MONOCART REPORT ----------------
       - name: Upload Monocart Report
