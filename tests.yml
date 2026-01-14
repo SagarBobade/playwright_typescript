@@ -12,7 +12,8 @@
   automation: ui
   testFile: tests/login.spec.ts
   testName: should not be able to login with invalid credentials
-  description: Validates that system blocks login attempts with incorrect username/password combinations
+  description: Validates that system blocks login attempts with incorrect
+    username/password combinations
   expectedResult: Error message displayed and user remains on login page
 - test_id: TC-002
   title: Verify successful login and navigation to dashboard
@@ -38,7 +39,7 @@
     - password-reset
     - authentication
   bugId: BUG-456
-  isAutomated: false
+  isAutomated: true
   type: functional
   automation: manual
   testFile: null
@@ -59,7 +60,8 @@
   testFile: null
   testName: null
   description: Validates that user session expires after configured period of inactivity
-  expectedResult: User is logged out and redirected to login page after 15 minutes of inactivity
+  expectedResult: User is logged out and redirected to login page after 15 minutes
+    of inactivity
 - test_id: TC-005
   title: Verify successful login and navigation to dashboard
   priority: P3
