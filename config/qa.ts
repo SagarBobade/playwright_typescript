@@ -1,8 +1,8 @@
 export default {
-  baseURL: "https://qa.yourapp.com",
+  baseURL: "https://rahulshettyacademy.com/",
   apiURL: "https://qa-api.yourapp.com",
-  users: {
-    admin: "qa-admin@mail.com",
-    default: "qa-user@mail.com"
+  user: {
+    email: "bobadesagarwd@gmail.com",
+    password: "Pass@123"
   }
 }
