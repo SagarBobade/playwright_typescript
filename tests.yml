@@ -113,7 +113,7 @@
     - authentication
     - smoke
   bugId: null
-  isAutomated: false
+  isAutomated: true
   type: sanity
   automation: ui
   testFile: tests/login.spec.ts
@@ -127,7 +127,7 @@
     - authentication
     - smoke
   bugId: null
-  isAutomated: false
+  isAutomated: true
   type: sanity
   automation: ui
   testFile: tests/login.spec.ts
@@ -141,7 +141,7 @@
     - authentication
     - smoke
   bugId: null
-  isAutomated: false
+  isAutomated: true
   type: sanity
   automation: ui
   testFile: tests/login.spec.ts
