@@ -20,7 +20,7 @@
     - smoke
     - auth
   bugId: null
-  isAutomated: true
+  isAutomated: false
   type: authentication
   automation: ui
   testFile: tests/login.spec.ts
