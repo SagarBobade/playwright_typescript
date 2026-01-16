@@ -55,7 +55,7 @@
     - admin
   bugId: SHOW-6888
   isAutomated: true
-  type: authentication
+  type: profile
   automation: ui
   testFile: tests/Admin/login.spec.ts
   testName: Admin Login Test - Updated

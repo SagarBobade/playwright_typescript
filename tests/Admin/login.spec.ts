@@ -24,7 +24,7 @@ test.describe.serial('Login Tests', () => {
      * Test case for admin login functionality
      * @jira SHOW-6888
      * @priority P1
-     * @feature authentication
+     * @feature profile
      * @description Validates that admin user can successfully login with valid credentials
      * @expectedResult Admin user is logged in and redirected to admin dashboard
      */
