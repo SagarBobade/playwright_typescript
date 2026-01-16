@@ -6,7 +6,7 @@
     - negative
     - authentication
     - security
-  bugId: null
+  bugId: SHOW-6959
   isAutomated: true
   type: functional
   automation: ui
@@ -38,7 +38,7 @@
     - login
     - password-reset
     - authentication
-  bugId: BUG-456
+  bugId: null
   isAutomated: true
   type: functional
   automation: manual
@@ -53,7 +53,7 @@
     - login
     - password-reset
     - authentication
-  bugId: BUG-456
+  bugId: null
   isAutomated: true
   type: functional
   automation: manual
