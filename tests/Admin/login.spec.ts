@@ -28,12 +28,7 @@ test.describe.serial('Login Tests', () => {
      * @tags registration,positive,security
      */
     test('Test from Admin login @TC-004', {
-        tag: ['@smoke', '@auth'],
-        annotation: [
-            { type: 'priority', description: 'P0' },
-            { type: 'feature', description: 'registration' }
-        ],
-        }, async ({ page }) => {
+        tag: ['@smoke', '@auth']}, async ({ page }) => {
             await loginPage.navigateTo('client/#/auth/login');
             console.log("Current URL:- "+page.url());
             console.log("I'm in 1st Test");

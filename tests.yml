@@ -2,9 +2,8 @@
   title: should not be able to login with invalid credentials
   priority: P0
   tags:
-    - login
-    - negative
-    - security
+    - regression
+    - auth
   bugId: SHOW-6959
   isAutomated: true
   type: authentication
@@ -18,9 +17,8 @@
   title: should be login and navigate to dashboard
   priority: P0
   tags:
-    - login
-    - positive
     - smoke
+    - auth
   bugId: null
   isAutomated: true
   type: authentication
@@ -31,11 +29,13 @@
   expectedResult: User is logged in and redirected to dashboard with correct page title
 - test_id: TC-003
   title: should be login and navigate to dashboard
-  priority: null
-  tags: null
+  priority: P1
+  tags:
+    - regression
+    - auth
   bugId: null
   isAutomated: true
-  type: null
+  type: user
   automation: manual
   testFile: null
   testName: null
@@ -45,9 +45,8 @@
   title: Test from Admin login
   priority: P0
   tags:
-    - registration
-    - positive
-    - security
+    - smoke
+    - auth
   bugId: SHOW-6888
   isAutomated: true
   type: registration

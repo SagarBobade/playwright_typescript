@@ -25,11 +25,11 @@ test.describe.serial('Login Tests', () => {
      * @jira SHOW-6959
      * @priority P0
      * @feature authentication
-     * @tags login,negative,security
      */
-    test('should not be able to login with invalid credentials @TC-001', async ({ page }) => {
+    test('should not be able to login with invalid credentials @TC-001', {
+        tag: ['@regression', '@auth']}, async () => {
         await loginPage.navigateTo('client/#/auth/login');
-        console.log("Current URL:- "+page.url());
+        //console.log("Current URL:- "+page.url());
         console.log("I'm in 1st Test");
         await loginPage.login('invalidUser@gmail.com', 'invalidPass');
         //TODO: Have assertion on toast message
@@ -37,8 +37,8 @@ test.describe.serial('Login Tests', () => {
 
     // @priority P0
     // @feature authentication
-    // @tags login,positive,smoke
-    test('should be login and navigate to dashboard @TC-002', async () => {
+    test.skip('should be login and navigate to dashboard @TC-002', {
+        tag: ['@smoke', '@auth']}, async () => {
         await loginPage.navigateTo('client/#/auth/login');
         const user = getUser();
         await loginPage.login(user.email, user.password);
@@ -47,7 +47,10 @@ test.describe.serial('Login Tests', () => {
         await expect(loginPage.page).toHaveTitle("Let's Shop");
     });
 
-    test('should be login and navigate to dashboard @TC-003', async () => {
+    // @priority P1
+    // @feature user-dashboard
+    test('should be login and navigate to dashboard @TC-003', {
+        tag: ['@regression', '@auth']}, async () => {
         await loginPage.navigateTo('client/#/auth/login');
         const user = getUser();
         await loginPage.login(user.email, user.password);

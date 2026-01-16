@@ -16,7 +16,7 @@ const CONFIG = {
     jiraPattern: /@jira\s+([A-Za-z]+-\d+)/gi,  // Pattern to extract Jira IDs (e.g., @jira SHOW-1234)
     priorityPattern: /@priority\s+(P\d+)/gi,  // Pattern to extract priority (e.g., @priority P0)
     featurePattern: /@feature\s+(\w+)/gi,  // Pattern to extract feature (e.g., @feature login)
-    tagsPattern: /@tags?\s+([\w,\s-]+?)(?=\n|$|\/\/|\*\/)/gi  // Pattern to extract tags on same line only
+    testTitleTagPattern: /@([\w-]+)/g  // Pattern to extract tags from test title (e.g., @smoke @regression)
 };
 
 /**
@@ -90,14 +90,20 @@ function extractTestMetadata(filePath) {
         if (testId) featureMap.set(testId, feature);
     }
     
-    // Extract Tags
-    const tagsPattern = new RegExp(CONFIG.tagsPattern.source, CONFIG.tagsPattern.flags);
-    let tagsMatch;
-    while ((tagsMatch = tagsPattern.exec(content)) !== null) {
-        const tagsStr = tagsMatch[1];
-        const tagsArray = tagsStr.split(',').map(tag => tag.trim());
-        const testId = findAssociatedTestId(tagsMatch.index, content);
-        if (testId) tagsMap.set(testId, tagsArray);
+    // Extract Tags from Playwright's tag property in test options
+    // Pattern to match: test('title @TC-XXX', { tag: ['@smoke', '@auth'] }, async...
+    const tagPropertyPattern = /test\(['"](.*?)@(TC-\d+)['"]\s*,\s*\{[^}]*tag:\s*\[([^\]]+)\]/g;
+    let tagPropertyMatch;
+    while ((tagPropertyMatch = tagPropertyPattern.exec(content)) !== null) {
+        const testId = tagPropertyMatch[2];
+        const tagsString = tagPropertyMatch[3];
+        
+        // Extract individual tags from the array
+        const tagMatches = tagsString.match(/['"]([^'"]+)['"]/g);
+        if (tagMatches) {
+            const tags = tagMatches.map(t => t.replace(/['"@]/g, '').trim());
+            tagsMap.set(testId, tags);
+        }
     }
     
     // Extract test metadata
