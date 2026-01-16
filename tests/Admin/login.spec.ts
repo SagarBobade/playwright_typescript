@@ -36,4 +36,20 @@ test.describe.serial('Login Tests', () => {
             //TODO: Have assertion on toast message
     });
 
+    /**
+     * for case
+     * @jira SHOW-6889
+     * @priority P0
+     * @feature registration
+     * @tags registration,positive,security
+     */
+    test.skip('Test from Admin logout @TC-005', {
+        tag: ['@smoke', '@auth']}, async ({ page }) => {
+            await loginPage.navigateTo('client/#/auth/login');
+            console.log("Current URL:- "+page.url());
+            console.log("I'm in 1st Test");
+            await loginPage.login('invalidUser@gmail.com', 'invalidPass');
+            //TODO: Have assertion on toast message
+    });
+
 });

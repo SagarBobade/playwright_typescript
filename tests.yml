@@ -56,3 +56,18 @@
   testName: null
   description: Validates user can request and complete password reset via email
   expectedResult: Reset link sent to email, user can set new password successfully
+- test_id: TC-005
+  title: Test from Admin logout
+  priority: P0
+  tags:
+    - smoke
+    - auth
+  bugId: SHOW-6889
+  isAutomated: true
+  type: registration
+  automation: manual
+  testFile: null
+  testName: null
+  description: Validates user can request and complete password reset via email
+  expectedResult: Reset link sent to email, user can set new password successfully
+  isSkipped: true
