@@ -89,6 +89,39 @@
             box-shadow: 0 4px 8px var(--shadow);
         }
         
+        .dashboard-toggle {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: all 0.3s;
+            margin-right: 15px;
+        }
+        
+        .dashboard-toggle:hover {
+            background: var(--bg-hover);
+            box-shadow: 0 2px 6px var(--shadow);
+        }
+        
+        .dashboard-toggle-icon {
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+        
+        .dashboard-toggle-icon.collapsed {
+            transform: rotate(180deg);
+        }
+        
+        .dashboard-top.collapsed {
+            display: none;
+        }
+        
         .last-sync-time {
             font-size: 14px;
             color: var(--text-secondary);
@@ -243,6 +276,9 @@
         </div>
         <div style="display: flex; align-items: center;">
             <span class="last-sync-time" id="last-sync-time"></span>
+            <button class="dashboard-toggle" id="dashboard-toggle" title="Toggle Dashboard Stats">
+                <span class="dashboard-toggle-icon" id="dashboard-icon">▲</span>
+            </button>
             <button class="theme-toggle" id="theme-toggle" title="Toggle Dark/Light Mode">
                 <span id="theme-icon">🐞</span>
             </button>
@@ -269,7 +305,7 @@
             </div>
         </div>
         <div class="chart-container">
-            <h3>Tests by Feature</h3>
+            <h3>Feature Distribution & Coverage</h3>
             <canvas id="featureChart"></canvas>
         </div>
     </div>
@@ -388,6 +424,58 @@
     function setupThemeToggle() {
         const toggleButton = document.getElementById('theme-toggle');
         toggleButton.addEventListener('click', toggleTheme);
+    }    
+    /**
+     * Setup dashboard toggle functionality
+     */
+    function setupDashboardToggle() {
+        const toggleButton = document.getElementById('dashboard-toggle');
+        const dashboardTop = document.querySelector('.dashboard-top');
+        const toggleIcon = document.getElementById('dashboard-icon');
+        
+        // Check if dashboard is collapsed in localStorage
+        const isCollapsed = localStorage.getItem('dashboardCollapsed') === 'true';
+        if (isCollapsed) {
+            dashboardTop.classList.add('collapsed');
+            toggleIcon.classList.add('collapsed');
+        }
+        
+        toggleButton.addEventListener('click', () => {
+            const isCurrentlyCollapsed = dashboardTop.classList.toggle('collapsed');
+            toggleIcon.classList.toggle('collapsed');
+            
+            if (isCurrentlyCollapsed) {
+                localStorage.setItem('dashboardCollapsed', 'true');
+            } else {
+                localStorage.setItem('dashboardCollapsed', 'false');
+            }
+        });
+    }
+    /**
+     * Initialize dashboard toggle button
+     */
+    function initDashboardToggle() {
+        const toggleButton = document.getElementById('dashboard-toggle');
+        const dashboardTop = document.querySelector('.dashboard-top');
+        const toggleIcon = document.getElementById('dashboard-icon');
+        
+        // Check if dashboard is collapsed in localStorage
+        const isCollapsed = localStorage.getItem('dashboardCollapsed') === 'true';
+        if (isCollapsed) {
+            dashboardTop.classList.add('collapsed');
+            toggleIcon.classList.add('collapsed');
+        }
+        
+        toggleButton.addEventListener('click', () => {
+            const isCurrentlyCollapsed = dashboardTop.classList.toggle('collapsed');
+            toggleIcon.classList.toggle('collapsed');
+            
+            if (isCurrentlyCollapsed) {
+                localStorage.setItem('dashboardCollapsed', 'true');
+            } else {
+                localStorage.setItem('dashboardCollapsed', 'false');
+            }
+        });
     }
     
     // ==================== DATA FETCHING ====================
@@ -848,6 +936,7 @@
     async function initializeDashboard() {
         initializeTheme();
         setupThemeToggle();
+        setupDashboardToggle();
         await loadDashboard();
         setupColumnFilters();
     }
