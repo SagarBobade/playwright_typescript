@@ -62,6 +62,14 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      # 6. Deploy to GitHub Pages
-      # Note: GitHub Pages usually tracks the 'main' branch or 'gh-pages' branch automatically.
-      # If your index.html is in the root, it will update as soon as step 5 pushes.
+      #   Add Webhook secret in github Settings > Secrets and variables > Actions for Slack notifications
+      # - name: Send Slack Notification
+      #   if: always() # Runs even if the build fails
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #     SLACK_TITLE: 'E2E Quality Manifest Sync'
+      #     SLACK_MESSAGE: |
+      #       *Status:* ${{ job.status }}
+      #       *Dashboard:* https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      #     SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
