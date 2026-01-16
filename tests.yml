@@ -4,11 +4,10 @@
   tags:
     - login
     - negative
-    - authentication
     - security
   bugId: SHOW-6959
   isAutomated: true
-  type: functional
+  type: authentication
   automation: ui
   testFile: tests/login.spec.ts
   testName: should not be able to login with invalid credentials
@@ -21,11 +20,10 @@
   tags:
     - login
     - positive
-    - authentication
     - smoke
   bugId: null
   isAutomated: true
-  type: smoke
+  type: authentication
   automation: ui
   testFile: tests/login.spec.ts
   testName: should be login and navigate to dashboard
@@ -33,14 +31,11 @@
   expectedResult: User is logged in and redirected to dashboard with correct page title
 - test_id: TC-003
   title: should be login and navigate to dashboard
-  priority: P2
-  tags:
-    - login
-    - password-reset
-    - authentication
+  priority: null
+  tags: null
   bugId: null
   isAutomated: true
-  type: functional
+  type: null
   automation: manual
   testFile: null
   testName: null
@@ -48,14 +43,14 @@
   expectedResult: Reset link sent to email, user can set new password successfully
 - test_id: TC-004
   title: Test from Admin login
-  priority: P2
+  priority: P0
   tags:
-    - login
-    - password-reset
-    - authentication
-  bugId: null
+    - registration
+    - positive
+    - security
+  bugId: SHOW-6888
   isAutomated: true
-  type: functional
+  type: registration
   automation: manual
   testFile: null
   testName: null

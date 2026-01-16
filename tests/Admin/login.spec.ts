@@ -20,12 +20,25 @@ test.describe.serial('Login Tests', () => {
         page.close();
     });
 
-    test('Test from Admin login @TC-004', async ({ page }) => {
-        await loginPage.navigateTo('client/#/auth/login');
-        console.log("Current URL:- "+page.url());
-        console.log("I'm in 1st Test");
-        await loginPage.login('invalidUser@gmail.com', 'invalidPass');
-        //TODO: Have assertion on toast message
+    /**
+     * for case
+     * @jira SHOW-6888
+     * @priority P0
+     * @feature registration
+     * @tags registration,positive,security
+     */
+    test('Test from Admin login @TC-004', {
+        tag: ['@smoke', '@auth'],
+        annotation: [
+            { type: 'priority', description: 'P0' },
+            { type: 'feature', description: 'registration' }
+        ],
+        }, async ({ page }) => {
+            await loginPage.navigateTo('client/#/auth/login');
+            console.log("Current URL:- "+page.url());
+            console.log("I'm in 1st Test");
+            await loginPage.login('invalidUser@gmail.com', 'invalidPass');
+            //TODO: Have assertion on toast message
     });
 
 });

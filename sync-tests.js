@@ -13,7 +13,10 @@ const CONFIG = {
     fileExtensions: ['.spec.ts', '.test.js', '.spec.js'], // File types to scan for test IDs
     idRegex: /TC-\d+/g,             // Regular expression pattern to match test IDs (e.g., TC-001, TC-042)
     testPattern: /test\(['"](.*?)@(TC-\d+)['"]/g,  // Pattern to extract test title and ID together
-    jiraPattern: /@jira\s+([A-Za-z]+-\d+)/gi  // Pattern to extract Jira IDs (e.g., @jira SHOW-1234)
+    jiraPattern: /@jira\s+([A-Za-z]+-\d+)/gi,  // Pattern to extract Jira IDs (e.g., @jira SHOW-1234)
+    priorityPattern: /@priority\s+(P\d+)/gi,  // Pattern to extract priority (e.g., @priority P0)
+    featurePattern: /@feature\s+(\w+)/gi,  // Pattern to extract feature (e.g., @feature login)
+    tagsPattern: /@tags?\s+([\w,\s-]+?)(?=\n|$|\/\/|\*\/)/gi  // Pattern to extract tags on same line only
 };
 
 /**
@@ -39,32 +42,62 @@ function loadYamlManifest() {
 }
 
 /**
- * Extract test metadata (ID, title, location, Jira ID) from a test file
+ * Extract test metadata (ID, title, location, Jira ID, priority, feature, tags) from a test file
  * @param {string} filePath - Path to the test file
- * @returns {Map} Map of test ID to metadata object {title, filePath, lineNumber, bugId}
+ * @returns {Map} Map of test ID to metadata object {title, filePath, lineNumber, bugId, priority, feature, tags}
  */
 function extractTestMetadata(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
     const testDataMap = new Map();
     
-    // Extract all Jira IDs with their positions
-    const jiraMap = new Map(); // testId -> jiraId
+    // Helper function to find associated test ID
+    function findAssociatedTestId(position, content) {
+        const searchWindow = content.substring(position, position + 500);
+        const testInWindow = searchWindow.match(/test\(['"](.*?)@(TC-\d+)['"]/i);
+        return testInWindow ? testInWindow[2] : null;
+    }
+    
+    // Extract all annotations with their positions
+    const jiraMap = new Map();
+    const priorityMap = new Map();
+    const featureMap = new Map();
+    const tagsMap = new Map();
+    
+    // Extract Jira IDs
     const jiraPattern = new RegExp(CONFIG.jiraPattern.source, CONFIG.jiraPattern.flags);
     let jiraMatch;
-    
     while ((jiraMatch = jiraPattern.exec(content)) !== null) {
-        const jiraId = jiraMatch[1].toUpperCase(); // Normalize to uppercase
-        const jiraPosition = jiraMatch.index;
-        
-        // Find the closest test after this Jira comment (within 500 characters)
-        const searchWindow = content.substring(jiraPosition, jiraPosition + 500);
-        const testInWindow = searchWindow.match(/test\(['"](.*?)@(TC-\d+)['"]/i);
-        
-        if (testInWindow) {
-            const associatedTestId = testInWindow[2];
-            jiraMap.set(associatedTestId, jiraId);
-            console.log(`      ↳ Found Jira: ${jiraId} associated with ${associatedTestId}`);
-        }
+        const jiraId = jiraMatch[1].toUpperCase();
+        const testId = findAssociatedTestId(jiraMatch.index, content);
+        if (testId) jiraMap.set(testId, jiraId);
+    }
+    
+    // Extract Priorities
+    const priorityPattern = new RegExp(CONFIG.priorityPattern.source, CONFIG.priorityPattern.flags);
+    let priorityMatch;
+    while ((priorityMatch = priorityPattern.exec(content)) !== null) {
+        const priority = priorityMatch[1].toUpperCase();
+        const testId = findAssociatedTestId(priorityMatch.index, content);
+        if (testId) priorityMap.set(testId, priority);
+    }
+    
+    // Extract Features
+    const featurePattern = new RegExp(CONFIG.featurePattern.source, CONFIG.featurePattern.flags);
+    let featureMatch;
+    while ((featureMatch = featurePattern.exec(content)) !== null) {
+        const feature = featureMatch[1].toLowerCase();
+        const testId = findAssociatedTestId(featureMatch.index, content);
+        if (testId) featureMap.set(testId, feature);
+    }
+    
+    // Extract Tags
+    const tagsPattern = new RegExp(CONFIG.tagsPattern.source, CONFIG.tagsPattern.flags);
+    let tagsMatch;
+    while ((tagsMatch = tagsPattern.exec(content)) !== null) {
+        const tagsStr = tagsMatch[1];
+        const tagsArray = tagsStr.split(',').map(tag => tag.trim());
+        const testId = findAssociatedTestId(tagsMatch.index, content);
+        if (testId) tagsMap.set(testId, tagsArray);
     }
     
     // Extract test metadata
@@ -79,18 +112,29 @@ function extractTestMetadata(filePath) {
         const contentUpToMatch = content.substring(0, match.index);
         const lineNumber = contentUpToMatch.split('\n').length;
         
-        // Get associated Jira ID if exists
+        // Get all associated metadata
         const bugId = jiraMap.get(testId) || null;
+        const priority = priorityMap.get(testId) || null;
+        const feature = featureMap.get(testId) || null;
+        const tags = tagsMap.get(testId) || null;
         
         testDataMap.set(testId, {
             title: title,
             filePath: filePath,
             lineNumber: lineNumber,
-            bugId: bugId
+            bugId: bugId,
+            priority: priority,
+            feature: feature,
+            tags: tags
         });
         
-        const jiraInfo = bugId ? ` [Jira: ${bugId}]` : '';
-        console.log(`      ↳ Extracted: ${testId} - "${title}" (line ${lineNumber})${jiraInfo}`);
+        const metaInfo = [];
+        if (bugId) metaInfo.push(`Jira: ${bugId}`);
+        if (priority) metaInfo.push(`Priority: ${priority}`);
+        if (feature) metaInfo.push(`Feature: ${feature}`);
+        if (tags) metaInfo.push(`Tags: ${tags.join(', ')}`);
+        const metaStr = metaInfo.length > 0 ? ` [${metaInfo.join(' | ')}]` : '';
+        console.log(`      ↳ Extracted: ${testId} - "${title}" (line ${lineNumber})${metaStr}`);
     }
     
     return testDataMap;
@@ -221,6 +265,126 @@ function syncBugIds(manifest, testDataMap) {
 }
 
 /**
+ * Sync Priorities from code to YAML manifest
+ * @param {Array} manifest - Test manifest array
+ * @param {Map} testDataMap - Map of test ID to metadata
+ * @returns {number} Count of updated priorities
+ */
+function syncPriorities(manifest, testDataMap) {
+    console.log('🎯 Syncing Priorities from code...');
+    let updateCount = 0;
+    
+    manifest.forEach(test => {
+        const codeMetadata = testDataMap.get(test.test_id);
+        
+        if (codeMetadata) {
+            const codePriority = codeMetadata.priority;
+            const yamlPriority = test.priority;
+            
+            // Update if priority is different (including null)
+            if (yamlPriority !== codePriority) {
+                console.log(`   [PRIORITY UPDATE] ${test.test_id}:`);
+                console.log(`      YAML: ${yamlPriority || 'null'}`);
+                console.log(`      CODE: ${codePriority || 'null'}`);
+                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
+                
+                test.priority = codePriority;
+                updateCount++;
+            }
+        }
+    });
+    
+    console.log(`   ✓ Updated ${updateCount} priority/priorities`);
+    return updateCount;
+}
+
+/**
+ * Sync Features from code to YAML manifest  
+ * @param {Array} manifest - Test manifest array
+ * @param {Map} testDataMap - Map of test ID to metadata
+ * @returns {number} Count of updated features
+ */
+function syncFeatures(manifest, testDataMap) {
+    console.log('🎭 Syncing Features from code...');
+    let updateCount = 0;
+    
+    manifest.forEach(test => {
+        const codeMetadata = testDataMap.get(test.test_id);
+        
+        if (codeMetadata) {
+            const codeFeature = codeMetadata.feature;
+            const yamlFeature = test.type; // Using 'type' field for feature
+            
+            // Update if feature is different (including null)
+            if (yamlFeature !== codeFeature) {
+                console.log(`   [FEATURE UPDATE] ${test.test_id}:`);
+                console.log(`      YAML: ${yamlFeature || 'null'}`);
+                console.log(`      CODE: ${codeFeature || 'null'}`);
+                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
+                
+                test.type = codeFeature;
+                updateCount++;
+            }
+        }
+    });
+    
+    console.log(`   ✓ Updated ${updateCount} feature(s)`);
+    return updateCount;
+}
+
+/**
+ * Sync Tags from code to YAML manifest
+ * @param {Array} manifest - Test manifest array
+ * @param {Map} testDataMap - Map of test ID to metadata
+ * @returns {number} Count of updated tags
+ */
+function syncTags(manifest, testDataMap) {
+    console.log('🏷️  Syncing Tags from code...');
+    let updateCount = 0;
+    
+    manifest.forEach(test => {
+        const codeMetadata = testDataMap.get(test.test_id);
+        
+        if (codeMetadata) {
+            const codeTags = codeMetadata.tags;
+            const yamlTags = test.tags;
+            
+            // Compare arrays (order-independent)
+            const tagsChanged = !areArraysEqual(yamlTags, codeTags);
+            
+            if (tagsChanged) {
+                console.log(`   [TAGS UPDATE] ${test.test_id}:`);
+                console.log(`      YAML: ${yamlTags ? JSON.stringify(yamlTags) : 'null'}`);
+                console.log(`      CODE: ${codeTags ? JSON.stringify(codeTags) : 'null'}`);
+                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
+                
+                test.tags = codeTags;
+                updateCount++;
+            }
+        }
+    });
+    
+    console.log(`   ✓ Updated ${updateCount} tag(s)`);
+    return updateCount;
+}
+
+/**
+ * Compare two arrays for equality (order-independent)
+ * @param {Array} arr1 - First array
+ * @param {Array} arr2 - Second array
+ * @returns {boolean} True if arrays contain same elements
+ */
+function areArraysEqual(arr1, arr2) {
+    if (arr1 === arr2) return true; // Both null or same reference
+    if (!arr1 || !arr2) return false; // One is null
+    if (arr1.length !== arr2.length) return false;
+    
+    const sorted1 = [...arr1].sort();
+    const sorted2 = [...arr2].sort();
+    return JSON.stringify(sorted1) === JSON.stringify(sorted2);
+}
+
+/**
  * Update manifest to sync isAutomated flag with actual code presence
  * @param {Array} manifest - Test manifest array
  * @param {Set} codeIds - Set of test IDs found in code
@@ -340,17 +504,26 @@ function main() {
     // 5. Sync Jira IDs (bugId) from code to manifest
     syncBugIds(manifest, testDataMap);
     
-    // 6. Detect shadow tests
+    // 6. Sync Priorities from code to manifest
+    syncPriorities(manifest, testDataMap);
+    
+    // 7. Sync Features from code to manifest
+    syncFeatures(manifest, testDataMap);
+    
+    // 8. Sync Tags from code to manifest
+    syncTags(manifest, testDataMap);
+    
+    // 9. Detect shadow tests
     const shadowTests = detectShadowTests(codeIds, yamlIds);
     
-    // 7. Save updated manifest
+    // 10. Save updated manifest
     saveManifestToYaml(manifest);
     
-    // 8. Calculate and save statistics
+    // 11. Calculate and save statistics
     const stats = calculateStatistics(manifest, yamlIds, shadowTests);
     saveStatistics(stats);
     
-    // 9. Display results and exit if needed
+    // 12. Display results and exit if needed
     displayResultsAndExit(stats, shadowTests.length > 0);
 }
 
