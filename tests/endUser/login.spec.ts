@@ -23,6 +23,9 @@ test.describe.serial('Login Tests', () => {
     /**
      * for case
      * @jira SHOW-6959
+     * @priority P0
+     * @feature authentication
+     * @tags login,negative,security
      */
     test('should not be able to login with invalid credentials @TC-001', async ({ page }) => {
         await loginPage.navigateTo('client/#/auth/login');
@@ -32,6 +35,9 @@ test.describe.serial('Login Tests', () => {
         //TODO: Have assertion on toast message
     });
 
+    // @priority P0
+    // @feature authentication
+    // @tags login,positive,smoke
     test('should be login and navigate to dashboard @TC-002', async () => {
         await loginPage.navigateTo('client/#/auth/login');
         const user = getUser();
