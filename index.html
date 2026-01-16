@@ -171,29 +171,46 @@
         }
     }
 
-    // Filter function with typeahead
+    // Filter function with typeahead - supports multi-column filtering
     function setupColumnFilters() {
         const searchInputs = document.querySelectorAll('.header-search');
         const tbody = document.getElementById('test-table-body');
         
-        searchInputs.forEach(input => {
-            input.addEventListener('keyup', function() {
-                const columnIndex = parseInt(this.dataset.column);
-                const searchValue = this.value.toLowerCase();
-                const rows = tbody.getElementsByTagName('tr');
+        // Function to apply all filters
+        function applyAllFilters() {
+            const rows = tbody.getElementsByTagName('tr');
+            
+            // Get all search values
+            const filters = Array.from(searchInputs).map(input => ({
+                column: parseInt(input.dataset.column),
+                value: input.value.toLowerCase()
+            }));
+            
+            // Check each row
+            for (let row of rows) {
+                let showRow = true;
                 
-                for (let row of rows) {
-                    const cell = row.getElementsByTagName('td')[columnIndex];
-                    if (cell) {
-                        const cellText = cell.textContent || cell.innerText;
-                        if (cellText.toLowerCase().indexOf(searchValue) > -1) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
+                // Check if row matches all active filters
+                for (let filter of filters) {
+                    if (filter.value) { // Only check if there's a search value
+                        const cell = row.getElementsByTagName('td')[filter.column];
+                        if (cell) {
+                            const cellText = (cell.textContent || cell.innerText).toLowerCase();
+                            if (cellText.indexOf(filter.value) === -1) {
+                                showRow = false;
+                                break; // No need to check other filters
+                            }
                         }
                     }
                 }
-            });
+                
+                row.style.display = showRow ? '' : 'none';
+            }
+        }
+        
+        // Add event listener to each search input
+        searchInputs.forEach(input => {
+            input.addEventListener('keyup', applyAllFilters);
         });
     }
 
