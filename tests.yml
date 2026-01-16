@@ -1,5 +1,5 @@
 - test_id: TC-001
-  title: Verify user cannot login with invalid credentials
+  title: should not be able to login with invalid credentials
   priority: P0
   tags:
     - login
@@ -16,7 +16,7 @@
     username/password combinations
   expectedResult: Error message displayed and user remains on login page
 - test_id: TC-002
-  title: Verify successful login and navigation to dashboard
+  title: should be login and navigate to dashboard
   priority: P0
   tags:
     - login
@@ -32,7 +32,7 @@
   description: Validates successful user authentication and redirection to main dashboard
   expectedResult: User is logged in and redirected to dashboard with correct page title
 - test_id: TC-003
-  title: Verify password reset functionality
+  title: should be login and navigate to dashboard
   priority: P2
   tags:
     - login
@@ -47,130 +47,17 @@
   description: Validates user can request and complete password reset via email
   expectedResult: Reset link sent to email, user can set new password successfully
 - test_id: TC-004
-  title: Verify session timeout after inactivity
-  priority: P1
+  title: Test from Admin login
+  priority: P2
   tags:
-    - security
-    - session-management
+    - login
+    - password-reset
     - authentication
-  bugId: null
-  isAutomated: false
-  type: security
+  bugId: BUG-456
+  isAutomated: true
+  type: functional
   automation: manual
   testFile: null
   testName: null
-  description: Validates that user session expires after configured period of inactivity
-  expectedResult: User is logged out and redirected to login page after 15 minutes
-    of inactivity
-- test_id: TC-005
-  title: Verify successful login and navigation to dashboard
-  priority: P3
-  tags:
-    - login
-    - negative
-    - authentication
-    - smoke
-  bugId: null
-  isAutomated: false
-  type: sanity
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
-- test_id: TC-006
-  title: Verify successful login and navigation to dashboard
-  priority: P3
-  tags:
-    - login
-    - negative
-    - authentication
-    - smoke
-  bugId: null
-  isAutomated: false
-  type: sanity
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
-- test_id: TC-007
-  title: Verify successful login and navigation to dashboard
-  priority: P3
-  tags:
-    - login
-    - negative
-    - authentication
-    - smoke
-  bugId: null
-  isAutomated: false
-  type: sanity
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
-- test_id: TC-008
-  title: Verify successful login and navigation to dashboard
-  priority: P3
-  tags:
-    - login
-    - negative
-    - authentication
-    - smoke
-  bugId: null
-  isAutomated: true
-  type: sanity
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
-- test_id: TC-009
-  title: Verify successful login and navigation to dashboard
-  priority: P3
-  tags:
-    - login
-    - negative
-    - authentication
-    - smoke
-  bugId: null
-  isAutomated: true
-  type: sanity
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
-- test_id: TC-010
-  title: Verify successful login and navigation to dashboard
-  priority: P3
-  tags:
-    - login
-    - negative
-    - authentication
-    - smoke
-  bugId: null
-  isAutomated: true
-  type: sanity
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
-- test_id: TC-011
-  title: Verify successful login and navigation to dashboard
-  priority: P3
-  tags:
-    - login
-    - negative
-    - authentication
-    - smoke
-  bugId: null
-  isAutomated: true
-  type: sanity
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
-- test_id: TC-012
-  title: Verify successful login and navigation to dashboard
-  priority: P3
-  tags:
-    - login
-    - negative
-    - authentication
-    - smoke
-  bugId: null
-  isAutomated: false
-  type: sanity
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
+  description: Validates user can request and complete password reset via email
+  expectedResult: Reset link sent to email, user can set new password successfully
