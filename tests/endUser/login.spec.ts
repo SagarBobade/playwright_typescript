@@ -21,45 +21,54 @@ test.describe.serial('Login Tests', () => {
     });
 
     /**
-     * Test case for invalid login credentials
-     * @jira SHOW-6959
-     * @priority P2
-     * @feature authentication
-     * @description Verifies that the system prevents login with incorrect username and password combination
-     * @expectedResult Error toast message is displayed and user stays on login page
+     * Test case for customer login with invalid credentials
+     * @jira SHOP-1234
+     * @priority P0
+     * @feature user-authentication
+     * @description Verifies that the e-commerce platform prevents unauthorized access when users attempt to login with incorrect credentials and displays appropriate error messages
      */
-    test('Invalid Login Credentials Test @TC-001', {
-        tag: ['@regression', '@auth', '@negative']}, async () => {
+    test('Verify Invalid Login Shows Error Message @TC-001', {
+        tag: ['@regression', '@auth', '@security']}, async () => {
         await loginPage.navigateTo('client/#/auth/login');
-        //console.log("Current URL:- "+page.url());
-        console.log("I'm in 1st Test");
-        await loginPage.login('invalidUser@gmail.com', 'invalidPass');
-        //TODO: Have assertion on toast message
+        await loginPage.login('invalid.user@example.com', 'WrongPassword123');
+        await expect(loginPage.page.locator('.error-message')).toBeVisible();
+        await expect(loginPage.page.locator('.error-message')).toHaveText(/Invalid credentials/);
     });
 
-    // @priority P3
-    // @feature profile
-    test.skip('should be login and navigate to Profile @TC-002', {
-        tag: ['@smoke', '@user']}, async () => {
+    /**
+     * Test case for customer profile access after successful login
+     * @jira SHOP-1567
+     * @priority P1
+     * @feature customer-profile
+     * @description Validates that logged-in customers can access their profile page to view and edit personal information, order history, and saved addresses
+     */
+    test.skip('Verify Customer Can Access Profile After Login @TC-002', {
+        tag: ['@smoke', '@profile', '@user-management']}, async () => {
+        await loginPage.navigateTo('client/#/auth/login');
+        const user = getUser();
+        await loginPage.login(user.email, user.password);
+        await headerPage.navigateToProfile();
+        await expect(loginPage.page).toHaveTitle(/My Profile - ShopEase/);
+        await expect(loginPage.page.locator('.profile-name')).toBeVisible();
+        await expect(loginPage.page.locator('.profile-email')).toContainText(user.email);
+    });
+
+    /**
+     * Test case for successful customer login and dashboard redirection
+     * @jira SHOP-1890
+     * @priority P0
+     * @feature user-authentication
+     * @description Verifies that customers with valid credentials can successfully login to the e-commerce platform and are redirected to the main shopping dashboard with personalized recommendations
+     */
+    test('Verify Successful Login Redirects To Shopping Dashboard @TC-003', {
+        tag: ['@smoke', '@auth', '@critical']}, async () => {
         await loginPage.navigateTo('client/#/auth/login');
         const user = getUser();
         await loginPage.login(user.email, user.password);
         await loginPage.waitForUrl('dashboard');
-        console.log("I'm in 2nd Test");
-        await expect(loginPage.page).toHaveTitle("Let's Shop");
-        await expect(loginPage.page).toHaveURL(/dashboard/);
-    });
-
-    // @priority P1
-    // @feature user-dashboard
-    test('should be login and navigate to dashboard @TC-003', {
-        tag: ['@regression', '@auth']}, async () => {
-        await loginPage.navigateTo('client/#/auth/login');
-        const user = getUser();
-        await loginPage.login(user.email, user.password);
-        await loginPage.waitForUrl('dashboard');
-        console.log("I'm in 3rd Test");
-        await expect(loginPage.page).toHaveTitle("Let's Shop");
+        await expect(loginPage.page).toHaveTitle(/ShopEase - Online Shopping/);
+        await expect(loginPage.page.locator('.welcome-banner')).toBeVisible();
+        await expect(loginPage.page.locator('.product-recommendations')).toBeVisible();
     });
 
 });

@@ -1,79 +1,91 @@
 - test_id: TC-001
-  title: Invalid Login Credentials Test
-  priority: P2
+  title: Verify Invalid Login Shows Error Message
+  priority: P0
   tags:
     - regression
     - auth
-    - negative
-  bugId: SHOW-6959
-  isAutomated: true
-  type: authentication
-  automation: ui
-  testFile: tests/endUser/login.spec.ts
-  testName: Invalid Login Credentials Test
-  description: Verifies that the system prevents login with incorrect username and
-    password combination
-  expectedResult: null
-  isSkipped: false
-- test_id: TC-002
-  title: should be login and navigate to Profile
-  priority: P3
-  tags:
-    - smoke
-    - user
-  bugId: null
-  isAutomated: true
-  type: profile
-  automation: manual
-  testFile: tests/endUser/login.spec.ts
-  testName: should be login and navigate to Profile
-  description: null
-  expectedResult: expect(loginPage.page).toHaveTitle("Let's Shop");
-    expect(loginPage.page).toHaveURL(/dashboard/)
-  isSkipped: true
-- test_id: TC-003
-  title: should be login and navigate to dashboard
-  priority: P1
-  tags:
-    - regression
-    - auth
-  bugId: null
+    - security
+  bugId: SHOP-1234
   isAutomated: true
   type: user
   automation: ui
   testFile: tests/endUser/login.spec.ts
-  testName: should be login and navigate to dashboard
-  description: null
-  expectedResult: expect(loginPage.page).toHaveTitle("Let's Shop")
+  testName: Verify Invalid Login Shows Error Message
+  description: Verifies that the e-commerce platform prevents unauthorized access
+    when users attempt to login with incorrect credentials and displays
+    appropriate error messages
+  expectedResult: null
   isSkipped: false
-- test_id: TC-004
-  title: Admin Login Test - Updated
+- test_id: TC-002
+  title: Verify Customer Can Access Profile After Login
   priority: P1
   tags:
     - smoke
-    - auth
-    - admin
-  bugId: SHOW-6888
+    - profile
+    - user-management
+  bugId: SHOP-1567
   isAutomated: true
-  type: profile
-  automation: ui
-  testFile: tests/Admin/login.spec.ts
-  testName: Admin Login Test - Updated
-  description: Validates that admin user can successfully login with valid credentials
-  expectedResult: null
-  isSkipped: false
-- test_id: TC-005
-  title: Test from Admin logout
+  type: customer
+  automation: manual
+  testFile: tests/endUser/login.spec.ts
+  testName: Verify Customer Can Access Profile After Login
+  description: Validates that logged-in customers can access their profile page to
+    view and edit personal information, order history, and saved addresses
+  expectedResult: expect(loginPage.page).toHaveTitle(/My Profile - ShopEase/)
+  isSkipped: true
+- test_id: TC-003
+  title: Verify Successful Login Redirects To Shopping Dashboard
   priority: P0
   tags:
     - smoke
     - auth
-  bugId: SHOW-6889
+    - critical
+  bugId: SHOP-1890
   isAutomated: true
-  type: registration
+  type: user
+  automation: ui
+  testFile: tests/endUser/login.spec.ts
+  testName: Verify Successful Login Redirects To Shopping Dashboard
+  description: Verifies that customers with valid credentials can successfully
+    login to the e-commerce platform and are redirected to the main shopping
+    dashboard with personalized recommendations
+  expectedResult: expect(loginPage.page).toHaveTitle(/ShopEase - Online Shopping/)
+  isSkipped: false
+- test_id: TC-004
+  title: Verify Admin Login And Dashboard Access
+  priority: P0
+  tags:
+    - smoke
+    - admin
+    - critical
+  bugId: SHOP-2456
+  isAutomated: true
+  type: admin
+  automation: ui
+  testFile: tests/Admin/login.spec.ts
+  testName: Verify Admin Login And Dashboard Access
+  description: Verifies that admin users can successfully authenticate and access
+    the admin dashboard with full inventory management, order processing, and
+    analytics capabilities
+  expectedResult: expect(page).toHaveURL(/admin\/dashboard/);
+    expect(page).toHaveTitle(/Admin Dashboard - ShopEase/)
+  isSkipped: false
+- test_id: TC-005
+  title: Verify Admin Logout Terminates Session Securely
+  priority: P1
+  tags:
+    - regression
+    - admin
+    - security
+  bugId: SHOP-2789
+  isAutomated: true
+  type: admin
   automation: manual
   testFile: tests/Admin/login.spec.ts
-  testName: Test from Admin logout
-  description: null
-  expectedResult: null
+  testName: Verify Admin Logout Terminates Session Securely
+  description: Validates that admin users can securely logout from the admin
+    panel, session is terminated properly, and attempting to access admin pages
+    redirects to login screen
+  expectedResult: expect(page).toHaveURL(/admin\/dashboard/);
+    expect(page).toHaveURL(/auth\/login/); expect(page).toHaveURL(/auth\/login/)
   isSkipped: true

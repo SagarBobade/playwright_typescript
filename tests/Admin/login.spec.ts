@@ -21,36 +21,39 @@ test.describe.serial('Login Tests', () => {
     });
 
     /**
-     * Test case for admin login functionality
-     * @jira SHOW-6888
-     * @priority P1
-     * @feature profile
-     * @description Validates that admin user can successfully login with valid credentials
-     * @expectedResult Admin user is logged in and redirected to admin dashboard
+     * Test case for admin portal authentication and access control
+     * @jira SHOP-2456
+     * @priority P0
+     * @feature admin-authentication
+     * @description Verifies that admin users can successfully authenticate and access the admin dashboard with full inventory management, order processing, and analytics capabilities
      */
-    test('Admin Login Test - Updated @TC-004', {
-        tag: ['@smoke', '@auth', '@admin']}, async ({ page }) => {
-            await loginPage.navigateTo('client/#/auth/login');
-            console.log("Current URL:- "+page.url());
-            console.log("I'm in 1st Test");
-            await loginPage.login('invalidUser@gmail.com', 'invalidPass');
-            //TODO: Have assertion on toast message
+    test('Verify Admin Login And Dashboard Access @TC-004', {
+        tag: ['@smoke', '@admin', '@critical']}, async ({ page }) => {
+            await loginPage.navigateTo('admin/#/auth/login');
+            await loginPage.login('admin@shopease.com', 'AdminSecure@2024');
+            await expect(page).toHaveURL(/admin\/dashboard/);
+            await expect(page).toHaveTitle(/Admin Dashboard - ShopEase/);
+            await expect(page.locator('.admin-panel')).toBeVisible();
+            await expect(page.locator('.total-orders-widget')).toBeVisible();
+            await expect(page.locator('.revenue-chart')).toBeVisible();
     });
 
     /**
-     * for case
-     * @jira SHOW-6889
-     * @priority P0
-     * @feature registration
-     * @tags registration,positive,security
+     * Test case for admin session termination and secure logout
+     * @jira SHOP-2789
+     * @priority P1
+     * @feature admin-security
+     * @description Validates that admin users can securely logout from the admin panel, session is terminated properly, and attempting to access admin pages redirects to login screen
      */
-    test.skip('Test from Admin logout @TC-005', {
-        tag: ['@smoke', '@auth']}, async ({ page }) => {
-            await loginPage.navigateTo('client/#/auth/login');
-            console.log("Current URL:- "+page.url());
-            console.log("I'm in 1st Test");
-            await loginPage.login('invalidUser@gmail.com', 'invalidPass');
-            //TODO: Have assertion on toast message
+    test.skip('Verify Admin Logout Terminates Session Securely @TC-005', {
+        tag: ['@regression', '@admin', '@security']}, async ({ page }) => {
+            await loginPage.navigateTo('admin/#/auth/login');
+            await loginPage.login('admin@shopease.com', 'AdminSecure@2024');
+            await expect(page).toHaveURL(/admin\/dashboard/);
+            await headerPage.clickLogout();
+            await expect(page).toHaveURL(/auth\/login/);
+            await page.goBack();
+            await expect(page).toHaveURL(/auth\/login/);
     });
 
 });
