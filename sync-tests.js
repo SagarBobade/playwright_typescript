@@ -510,13 +510,16 @@ function saveManifestToYaml(manifest) {
  */
 function calculateStatistics(manifest, yamlIds, shadowTests) {
     const totalTests = yamlIds.length;
-    const automatedCount = manifest.filter(test => test.isAutomated === true).length;
+    // Count tests that are automated and not skipped
+    const automatedCount = manifest.filter(test => test.isAutomated === true && !test.isSkipped).length;
+    // Manual tests are those marked as skipped (shown as MANUAL in UI)
+    const manualCount = manifest.filter(test => test.isSkipped === true).length;
     const coveragePercent = totalTests > 0 ? ((automatedCount / totalTests) * 100).toFixed(2) : 0;
     
     return {
         totalManifested: totalTests,
         automated: automatedCount,
-        manual: totalTests - automatedCount,
+        manual: manualCount,
         testCoverage: `${coveragePercent}%`,
         shadowTestsCount: shadowTests.length,
         shadowTestsList: shadowTests,
