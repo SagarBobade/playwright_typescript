@@ -12,7 +12,8 @@ const CONFIG = {
     testsDir: './tests',             // Directory where test spec files are located
     fileExtensions: ['.spec.ts', '.test.js', '.spec.js'], // File types to scan for test IDs
     idRegex: /TC-\d+/g,             // Regular expression pattern to match test IDs (e.g., TC-001, TC-042)
-    testPattern: /test\(['"](.*?)@(TC-\d+)['"]/g  // Pattern to extract test title and ID together
+    testPattern: /test\(['"](.*?)@(TC-\d+)['"]/g,  // Pattern to extract test title and ID together
+    jiraPattern: /@jira\s+([A-Za-z]+-\d+)/gi  // Pattern to extract Jira IDs (e.g., @jira SHOW-1234)
 };
 
 /**
@@ -38,15 +39,35 @@ function loadYamlManifest() {
 }
 
 /**
- * Extract test metadata (ID, title, location) from a test file
+ * Extract test metadata (ID, title, location, Jira ID) from a test file
  * @param {string} filePath - Path to the test file
- * @returns {Map} Map of test ID to metadata object {title, filePath, lineNumber}
+ * @returns {Map} Map of test ID to metadata object {title, filePath, lineNumber, bugId}
  */
 function extractTestMetadata(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
     const testDataMap = new Map();
     
-    // Reset regex lastIndex to avoid issues with global flag
+    // Extract all Jira IDs with their positions
+    const jiraMap = new Map(); // testId -> jiraId
+    const jiraPattern = new RegExp(CONFIG.jiraPattern.source, CONFIG.jiraPattern.flags);
+    let jiraMatch;
+    
+    while ((jiraMatch = jiraPattern.exec(content)) !== null) {
+        const jiraId = jiraMatch[1].toUpperCase(); // Normalize to uppercase
+        const jiraPosition = jiraMatch.index;
+        
+        // Find the closest test after this Jira comment (within 500 characters)
+        const searchWindow = content.substring(jiraPosition, jiraPosition + 500);
+        const testInWindow = searchWindow.match(/test\(['"](.*?)@(TC-\d+)['"]/i);
+        
+        if (testInWindow) {
+            const associatedTestId = testInWindow[2];
+            jiraMap.set(associatedTestId, jiraId);
+            console.log(`      ↳ Found Jira: ${jiraId} associated with ${associatedTestId}`);
+        }
+    }
+    
+    // Extract test metadata
     const pattern = new RegExp(CONFIG.testPattern.source, CONFIG.testPattern.flags);
     let match;
     
@@ -58,13 +79,18 @@ function extractTestMetadata(filePath) {
         const contentUpToMatch = content.substring(0, match.index);
         const lineNumber = contentUpToMatch.split('\n').length;
         
+        // Get associated Jira ID if exists
+        const bugId = jiraMap.get(testId) || null;
+        
         testDataMap.set(testId, {
             title: title,
             filePath: filePath,
-            lineNumber: lineNumber
+            lineNumber: lineNumber,
+            bugId: bugId
         });
         
-        console.log(`      ↳ Extracted: ${testId} - "${title}" (line ${lineNumber})`);
+        const jiraInfo = bugId ? ` [Jira: ${bugId}]` : '';
+        console.log(`      ↳ Extracted: ${testId} - "${title}" (line ${lineNumber})${jiraInfo}`);
     }
     
     return testDataMap;
@@ -157,6 +183,40 @@ function syncTestTitles(manifest, testDataMap) {
     });
     
     console.log(`   ✓ Updated ${updateCount} test title(s)`);
+    return updateCount;
+}
+
+/**
+ * Sync Jira IDs (bugId) from code to YAML manifest
+ * @param {Array} manifest - Test manifest array
+ * @param {Map} testDataMap - Map of test ID to metadata
+ * @returns {number} Count of updated bug IDs
+ */
+function syncBugIds(manifest, testDataMap) {
+    console.log('🐛 Syncing Jira IDs (bugId) from code...');
+    let updateCount = 0;
+    
+    manifest.forEach(test => {
+        const codeMetadata = testDataMap.get(test.test_id);
+        
+        if (codeMetadata) {
+            const codeBugId = codeMetadata.bugId;
+            const yamlBugId = test.bugId;
+            
+            // Update if bugId is different (including null)
+            if (yamlBugId !== codeBugId) {
+                console.log(`   [BUG ID UPDATE] ${test.test_id}:`);
+                console.log(`      YAML: ${yamlBugId || 'null'}`);
+                console.log(`      CODE: ${codeBugId || 'null'}`);
+                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
+                
+                test.bugId = codeBugId;
+                updateCount++;
+            }
+        }
+    });
+    
+    console.log(`   ✓ Updated ${updateCount} Jira ID(s)`);
     return updateCount;
 }
 
@@ -277,17 +337,20 @@ function main() {
     // 4. Sync test titles from code to manifest
     syncTestTitles(manifest, testDataMap);
     
-    // 5. Detect shadow tests
+    // 5. Sync Jira IDs (bugId) from code to manifest
+    syncBugIds(manifest, testDataMap);
+    
+    // 6. Detect shadow tests
     const shadowTests = detectShadowTests(codeIds, yamlIds);
     
-    // 6. Save updated manifest
+    // 7. Save updated manifest
     saveManifestToYaml(manifest);
     
-    // 7. Calculate and save statistics
+    // 8. Calculate and save statistics
     const stats = calculateStatistics(manifest, yamlIds, shadowTests);
     saveStatistics(stats);
     
-    // 8. Display results and exit if needed
+    // 9. Display results and exit if needed
     displayResultsAndExit(stats, shadowTests.length > 0);
 }
 
