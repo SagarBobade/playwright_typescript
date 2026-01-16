@@ -21,13 +21,15 @@ test.describe.serial('Login Tests', () => {
     });
 
     /**
-     * for case
+     * Test case for invalid login credentials
      * @jira SHOW-6959
-     * @priority P0
+     * @priority P2
      * @feature authentication
+     * @description Verifies that the system prevents login with incorrect username and password combination
+     * @expectedResult Error toast message is displayed and user stays on login page
      */
-    test('should not be able to login with invalid credentials @TC-001', {
-        tag: ['@regression', '@auth']}, async () => {
+    test('Invalid Login Credentials Test @TC-001', {
+        tag: ['@regression', '@auth', '@negative']}, async () => {
         await loginPage.navigateTo('client/#/auth/login');
         //console.log("Current URL:- "+page.url());
         console.log("I'm in 1st Test");
@@ -45,6 +47,7 @@ test.describe.serial('Login Tests', () => {
         await loginPage.waitForUrl('dashboard');
         console.log("I'm in 2nd Test");
         await expect(loginPage.page).toHaveTitle("Let's Shop");
+        await expect(loginPage.page).toHaveURL(/dashboard/);
     });
 
     // @priority P1

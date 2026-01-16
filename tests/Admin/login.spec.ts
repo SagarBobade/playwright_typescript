@@ -21,14 +21,15 @@ test.describe.serial('Login Tests', () => {
     });
 
     /**
-     * for case
+     * Test case for admin login functionality
      * @jira SHOW-6888
-     * @priority P0
-     * @feature registration
-     * @tags registration,positive,security
+     * @priority P1
+     * @feature authentication
+     * @description Validates that admin user can successfully login with valid credentials
+     * @expectedResult Admin user is logged in and redirected to admin dashboard
      */
-    test('Test from Admin login @TC-004', {
-        tag: ['@smoke', '@auth']}, async ({ page }) => {
+    test('Admin Login Test - Updated @TC-004', {
+        tag: ['@smoke', '@auth', '@admin']}, async ({ page }) => {
             await loginPage.navigateTo('client/#/auth/login');
             console.log("Current URL:- "+page.url());
             console.log("I'm in 1st Test");

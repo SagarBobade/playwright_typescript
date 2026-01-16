@@ -156,6 +156,47 @@
         }
         .header-content { display: flex; flex-direction: column; }
         .header-label { margin-bottom: 5px; }
+        /* Hide Test File column (7th column) */
+        table th:nth-child(7),
+        table td:nth-child(7) {
+            display: none;
+        }
+        /* Tooltip styling */
+        .tooltip-cell {
+            position: relative;
+            cursor: help;
+        }
+        .tooltip-cell:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 50%;
+            bottom: 100%;
+            transform: translateX(-50%);
+            background-color: var(--text-primary);
+            color: var(--bg-primary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            max-width: 400px;
+            width: max-content;
+            z-index: 1000;
+            font-size: 13px;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+        .tooltip-cell:hover::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: 100%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--text-primary);
+            z-index: 1001;
+            margin-bottom: 2px;
+        }
         .chart-container {
             flex: 0 0 350px;
             background: var(--bg-secondary);
@@ -257,8 +298,26 @@
                 </th>
                 <th>
                     <div class="header-content">
-                        <span class="header-label">Status</span>
+                        <span class="header-label">Test File</span>
                         <input type="text" class="header-search" placeholder="Search..." data-column="6">
+                    </div>
+                </th>
+                <th>
+                    <div class="header-content">
+                        <span class="header-label">Description</span>
+                        <input type="text" class="header-search" placeholder="Search..." data-column="7">
+                    </div>
+                </th>
+                <th>
+                    <div class="header-content">
+                        <span class="header-label">Expected Result</span>
+                        <input type="text" class="header-search" placeholder="Search..." data-column="8">
+                    </div>
+                </th>
+                <th>
+                    <div class="header-content">
+                        <span class="header-label">Status</span>
+                        <input type="text" class="header-search" placeholder="Search..." data-column="9">
                     </div>
                 </th>
             </tr>
@@ -552,6 +611,21 @@
         const skippedLabel = test.isSkipped ? '<span class="skipped-label">SKIPPED</span>' : '';
         const rowClass = test.isSkipped ? 'skipped-row' : '';
         
+        // Format test file path - show only relative path
+        const testFileDisplay = test.testFile ? `<code style="font-size: 11px;">${test.testFile}</code>` : '-';
+        
+        // Format description with truncation and tooltip
+        const descriptionFull = test.description || '';
+        const descriptionTruncated = descriptionFull.length > 80 ? descriptionFull.substring(0, 80) + '...' : descriptionFull;
+        const descriptionDisplay = descriptionFull ? descriptionTruncated : '-';
+        const descriptionTooltip = descriptionFull.length > 80 ? `data-tooltip="${descriptionFull.replace(/"/g, '&quot;')}"` : '';
+        
+        // Format expected result with truncation and tooltip
+        const expectedResultFull = test.expectedResult || '';
+        const expectedResultTruncated = expectedResultFull.length > 80 ? expectedResultFull.substring(0, 80) + '...' : expectedResultFull;
+        const expectedResultDisplay = expectedResultFull ? expectedResultTruncated : '-';
+        const expectedResultTooltip = expectedResultFull.length > 80 ? `data-tooltip="${expectedResultFull.replace(/"/g, '&quot;')}"` : '';
+        
         return `
             <tr class="${rowClass}">
                 <td><strong>${test.test_id}</strong>${skippedLabel}</td>
@@ -560,6 +634,9 @@
                 <td>${tagHtml}</td>
                 <td>${bugLink}</td>
                 <td>${test.type || '-'}</td>
+                <td>${testFileDisplay}</td>
+                <td style="font-size: 12px;" class="${descriptionFull.length > 80 ? 'tooltip-cell' : ''}" ${descriptionTooltip}>${descriptionDisplay}</td>
+                <td style="font-size: 12px;" class="${expectedResultFull.length > 80 ? 'tooltip-cell' : ''}" ${expectedResultTooltip}>${expectedResultDisplay}</td>
                 <td>${statusPill}</td>
             </tr>
         `;

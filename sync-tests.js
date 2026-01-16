@@ -17,7 +17,9 @@ const CONFIG = {
     priorityPattern: /@priority\s+(P\d+)/gi,  // Pattern to extract priority (e.g., @priority P0)
     featurePattern: /@feature\s+(\w+)/gi,  // Pattern to extract feature (e.g., @feature login)
     testTitleTagPattern: /@([\w-]+)/g,  // Pattern to extract tags from test title (e.g., @smoke @regression)
-    skipPattern: /test\.skip\(['"](.*?)@(TC-\d+)['"]/g  // Pattern to detect skipped tests (e.g., test.skip('title @TC-001'))
+    skipPattern: /test\.skip\(['"](.*?)@(TC-\d+)['"]/g,  // Pattern to detect skipped tests (e.g., test.skip('title @TC-001'))
+    descriptionPattern: /@description\s+(.+?)(?=\n\s*\*|$)/gis,  // Pattern to extract description
+    expectedResultPattern: /@expectedResult\s+(.+?)(?=\n\s*\*|$)/gis  // Pattern to extract expected result
 };
 
 /**
@@ -43,9 +45,9 @@ function loadYamlManifest() {
 }
 
 /**
- * Extract test metadata (ID, title, location, Jira ID, priority, feature, tags) from a test file
+ * Extract test metadata (ID, title, location, Jira ID, priority, feature, tags, description, expectedResult) from a test file
  * @param {string} filePath - Path to the test file
- * @returns {Map} Map of test ID to metadata object {title, filePath, lineNumber, bugId, priority, feature, tags}
+ * @returns {Map} Map of test ID to metadata object
  */
 function extractTestMetadata(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
@@ -58,12 +60,38 @@ function extractTestMetadata(filePath) {
         return testInWindow ? testInWindow[2] : null;
     }
     
+    // Helper function to extract JSDoc comment before test
+    function extractJSDocForTest(testPosition, content) {
+        // Look backwards from test position to find JSDoc comment
+        // Only accept JSDoc if it's immediately before the test (with only whitespace/newlines between)
+        const beforeTest = content.substring(Math.max(0, testPosition - 500), testPosition);
+        
+        // Find the last JSDoc comment
+        const jsDocMatch = beforeTest.match(/\/\*\*[\s\S]*?\*\//g);
+        if (jsDocMatch && jsDocMatch.length > 0) {
+            const lastJSDoc = jsDocMatch[jsDocMatch.length - 1];
+            const jsDocEndIndex = beforeTest.lastIndexOf(lastJSDoc) + lastJSDoc.length;
+            
+            // Check if there's anything other than whitespace between JSDoc end and test start
+            const betweenJSDocAndTest = beforeTest.substring(jsDocEndIndex);
+            
+            // Only return JSDoc if there's nothing but whitespace between it and the test
+            // This prevents picking up JSDoc from previous tests
+            if (/^\s*$/.test(betweenJSDocAndTest)) {
+                return lastJSDoc;
+            }
+        }
+        return null;
+    }
+    
     // Extract all annotations with their positions
     const jiraMap = new Map();
     const priorityMap = new Map();
     const featureMap = new Map();
     const skippedMap = new Map();
     const tagsMap = new Map();
+    const descriptionMap = new Map();
+    const expectedResultMap = new Map();
     
     // Extract Jira IDs
     const jiraPattern = new RegExp(CONFIG.jiraPattern.source, CONFIG.jiraPattern.flags);
@@ -100,7 +128,6 @@ function extractTestMetadata(filePath) {
         skippedMap.set(testId, true);
     }
     
-    // Extract 
     // Extract Tags from Playwright's tag property in test options
     // Pattern to match: test('title @TC-XXX', { tag: ['@smoke', '@auth'] }, async...
     // Also matches test.skip('title @TC-XXX', { tag: [...] }, async...
@@ -130,6 +157,49 @@ function extractTestMetadata(filePath) {
         const contentUpToMatch = content.substring(0, match.index);
         const lineNumber = contentUpToMatch.split('\n').length;
         
+        // Extract test function body to find expect statements
+        const testStartIndex = match.index;
+        const afterTest = content.substring(testStartIndex);
+        
+        // Find the test function body (between async () => { and the closing })
+        const functionBodyMatch = afterTest.match(/async\s*\([^)]*\)\s*=>\s*\{([\s\S]*?)^\s*\}\);/m);
+        let expectedResult = null;
+        
+        if (functionBodyMatch) {
+            const functionBody = functionBodyMatch[1];
+            
+            // Extract all expect statements
+            const expectPattern = /(?:await\s+)?expect\([^)]+\)\.([^\n;]+)/g;
+            const expectations = [];
+            let expectMatch;
+            
+            while ((expectMatch = expectPattern.exec(functionBody)) !== null) {
+                const assertion = expectMatch[0].trim();
+                // Clean up the assertion for readability
+                const cleanAssertion = assertion
+                    .replace(/await\s+/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                expectations.push(cleanAssertion);
+            }
+            
+            if (expectations.length > 0) {
+                expectedResult = expectations.join('; ');
+            }
+        }
+        
+        // Extract JSDoc comment for this test (for description only)
+        const jsDoc = extractJSDocForTest(match.index, content);
+        let description = null;
+        
+        if (jsDoc) {
+            // Extract description
+            const descMatch = jsDoc.match(/@description\s+(.+?)(?=\n\s*\*\s*@|\n\s*\*\/)/s);
+            if (descMatch) {
+                description = descMatch[1].replace(/\n\s*\*\s*/g, ' ').trim();
+            }
+        }
+        
         // Get all associated metadata
         const bugId = jiraMap.get(testId) || null;
         const priority = priorityMap.get(testId) || null;
@@ -137,15 +207,23 @@ function extractTestMetadata(filePath) {
         const tags = tagsMap.get(testId) || null;
         const isSkipped = skippedMap.get(testId) || false;
         
+        // Determine automation type
+        const automation = isSkipped ? 'manual' : 'ui';
+        
         testDataMap.set(testId, {
             title: title,
+            testName: title,  // testName is same as title
             filePath: filePath,
+            testFile: filePath,  // testFile is the file path
             lineNumber: lineNumber,
             bugId: bugId,
             priority: priority,
             feature: feature,
             tags: tags,
-            isSkipped: isSkipped
+            isSkipped: isSkipped,
+            automation: automation,
+            description: description,
+            expectedResult: expectedResult
         });
         
         const metaInfo = [];
@@ -154,6 +232,7 @@ function extractTestMetadata(filePath) {
         if (feature) metaInfo.push(`Feature: ${feature}`);
         if (tags) metaInfo.push(`Tags: ${tags.join(', ')}`);
         if (isSkipped) metaInfo.push(`⚠️ SKIPPED`);
+        if (description) metaInfo.push(`Desc: ${description.substring(0, 30)}...`);
         const metaStr = metaInfo.length > 0 ? ` [${metaInfo.join(' | ')}]` : '';
         console.log(`      ↳ Extracted: ${testId} - "${title}" (line ${lineNumber})${metaStr}`);
     }
@@ -218,220 +297,67 @@ function scanCodebaseForTestMetadata() {
 }
 
 /**
- * Sync test titles from code to YAML manifest
+ * Sync all test metadata from code to YAML manifest (force override)
  * @param {Array} manifest - Test manifest array
  * @param {Map} testDataMap - Map of test ID to metadata
- * @returns {number} Count of updated titles
+ * @returns {number} Count of tests synced
  */
-function syncTestTitles(manifest, testDataMap) {
-    console.log('📝 Syncing test titles from code...');
-    let updateCount = 0;
+function syncAllTestMetadata(manifest, testDataMap) {
+    console.log('🔄 Syncing ALL test metadata from code (force override)...');
+    let syncCount = 0;
     
     manifest.forEach(test => {
         const codeMetadata = testDataMap.get(test.test_id);
         
         if (codeMetadata) {
-            const codeTitle = codeMetadata.title;
-            const yamlTitle = test.title;
+            const updates = [];
             
-            // Update if title is missing or different
-            if (!yamlTitle || yamlTitle !== codeTitle) {
-                console.log(`   [TITLE UPDATE] ${test.test_id}:`);
-                console.log(`      YAML: "${yamlTitle || '(empty)'}"`);
-                console.log(`      CODE: "${codeTitle}"`);
-                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
-                
-                test.title = codeTitle;
-                updateCount++;
+            // Always override all fields from code
+            if (test.title !== codeMetadata.title) updates.push(`title: "${test.title}" → "${codeMetadata.title}"`);
+            test.title = codeMetadata.title;
+            
+            if (test.testName !== codeMetadata.testName) updates.push(`testName: "${test.testName}" → "${codeMetadata.testName}"`);
+            test.testName = codeMetadata.testName;
+            
+            if (test.testFile !== codeMetadata.testFile) updates.push(`testFile: "${test.testFile}" → "${codeMetadata.testFile}"`);
+            test.testFile = codeMetadata.testFile;
+            
+            if (test.bugId !== codeMetadata.bugId) updates.push(`bugId: ${test.bugId} → ${codeMetadata.bugId}`);
+            test.bugId = codeMetadata.bugId;
+            
+            if (test.priority !== codeMetadata.priority) updates.push(`priority: ${test.priority} → ${codeMetadata.priority}`);
+            test.priority = codeMetadata.priority;
+            
+            if (test.type !== codeMetadata.feature) updates.push(`type: ${test.type} → ${codeMetadata.feature}`);
+            test.type = codeMetadata.feature;
+            
+            const tagsChanged = !areArraysEqual(test.tags, codeMetadata.tags);
+            if (tagsChanged) updates.push(`tags: ${JSON.stringify(test.tags)} → ${JSON.stringify(codeMetadata.tags)}`);
+            test.tags = codeMetadata.tags;
+            
+            if (test.isSkipped !== codeMetadata.isSkipped) updates.push(`isSkipped: ${test.isSkipped} → ${codeMetadata.isSkipped}`);
+            test.isSkipped = codeMetadata.isSkipped;
+            
+            if (test.automation !== codeMetadata.automation) updates.push(`automation: ${test.automation} → ${codeMetadata.automation}`);
+            test.automation = codeMetadata.automation;
+            
+            if (test.description !== codeMetadata.description) updates.push(`description: updated`);
+            test.description = codeMetadata.description;
+            
+            if (test.expectedResult !== codeMetadata.expectedResult) updates.push(`expectedResult: updated`);
+            test.expectedResult = codeMetadata.expectedResult;
+            
+            if (updates.length > 0) {
+                console.log(`   [SYNC] ${test.test_id}:`)
+                updates.forEach(update => console.log(`      • ${update}`));
+                syncCount++;
             }
         }
     });
     
-    console.log(`   ✓ Updated ${updateCount} test title(s)`);
-    return updateCount;
-}
-
-/**
- * Sync Jira IDs (bugId) from code to YAML manifest
- * @param {Array} manifest - Test manifest array
- * @param {Map} testDataMap - Map of test ID to metadata
- * @returns {number} Count of updated bug IDs
- */
-function syncBugIds(manifest, testDataMap) {
-    console.log('🐛 Syncing Jira IDs (bugId) from code...');
-    let updateCount = 0;
-    
-    manifest.forEach(test => {
-        const codeMetadata = testDataMap.get(test.test_id);
-        
-        if (codeMetadata) {
-            const codeBugId = codeMetadata.bugId;
-            const yamlBugId = test.bugId;
-            
-            // Update if bugId is different (including null)
-            if (yamlBugId !== codeBugId) {
-                console.log(`   [BUG ID UPDATE] ${test.test_id}:`);
-                console.log(`      YAML: ${yamlBugId || 'null'}`);
-                console.log(`      CODE: ${codeBugId || 'null'}`);
-                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
-                
-                test.bugId = codeBugId;
-                updateCount++;
-            }
-        }
-    });
-    
-    console.log(`   ✓ Updated ${updateCount} Jira ID(s)`);
-    return updateCount;
-}
-
-/**
- * Sync Priorities from code to YAML manifest
- * @param {Array} manifest - Test manifest array
- * @param {Map} testDataMap - Map of test ID to metadata
- * @returns {number} Count of updated priorities
- */
-function syncPriorities(manifest, testDataMap) {
-    console.log('🎯 Syncing Priorities from code...');
-    let updateCount = 0;
-    
-    manifest.forEach(test => {
-        const codeMetadata = testDataMap.get(test.test_id);
-        
-        if (codeMetadata) {
-            const codePriority = codeMetadata.priority;
-            const yamlPriority = test.priority;
-            
-            // Update if priority is different (including null)
-            if (yamlPriority !== codePriority) {
-                console.log(`   [PRIORITY UPDATE] ${test.test_id}:`);
-                console.log(`      YAML: ${yamlPriority || 'null'}`);
-                console.log(`      CODE: ${codePriority || 'null'}`);
-                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
-                
-                test.priority = codePriority;
-                updateCount++;
-            }
-        }
-    });
-    
-    console.log(`   ✓ Updated ${updateCount} priority/priorities`);
-    return updateCount;
-}
-
-/**
- * Sync Features from code to YAML manifest  
- * @param {Array} manifest - Test manifest array
- * @param {Map} testDataMap - Map of test ID to metadata
- * @returns {number} Count of updated features
- */
-function syncFeatures(manifest, testDataMap) {
-    console.log('🎭 Syncing Features from code...');
-    let updateCount = 0;
-    
-    manifest.forEach(test => {
-        const codeMetadata = testDataMap.get(test.test_id);
-        
-        if (codeMetadata) {
-            const codeFeature = codeMetadata.feature;
-            const yamlFeature = test.type; // Using 'type' field for feature
-            
-            // Update if feature is different (including null)
-            if (yamlFeature !== codeFeature) {
-                console.log(`   [FEATURE UPDATE] ${test.test_id}:`);
-                console.log(`      YAML: ${yamlFeature || 'null'}`);
-                console.log(`      CODE: ${codeFeature || 'null'}`);
-                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
-                
-                test.type = codeFeature;
-                updateCount++;
-            }
-        }
-    });
-    
-    console.log(`   ✓ Updated ${updateCount} feature(s)`);
-    return updateCount;
-}
-
-/**
- * Sync Tags from code to YAML manifest
- * @param {Array} manifest - Test manifest array
- * @param {Map} testDataMap - Map of test ID to metadata
- * @returns {number} Count of updated tags
- */
-function syncTags(manifest, testDataMap) {
-    console.log('🏷️  Syncing Tags from code...');
-    let updateCount = 0;
-    
-    manifest.forEach(test => {
-        const codeMetadata = testDataMap.get(test.test_id);
-        
-        if (codeMetadata) {
-            const codeTags = codeMetadata.tags;
-            const yamlTags = test.tags;
-            
-            // Compare arrays (order-independent)
-            const tagsChanged = !areArraysEqual(yamlTags, codeTags);
-            
-            if (tagsChanged) {
-                console.log(`   [TAGS UPDATE] ${test.test_id}:`);
-                console.log(`      YAML: ${yamlTags ? JSON.stringify(yamlTags) : 'null'}`);
-                console.log(`      CODE: ${codeTags ? JSON.stringify(codeTags) : 'null'}`);
-                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
-                
-                test.tags = codeTags;
-                updateCount++;
-            }
-        }
-    });
-    
-    console.log(`   ✓ Updated ${updateCount} tag(s)`);
-    return updateCount;
-}
-
-/**
- * Sync Skipped status from code to YAML manifest
- * @param {Array} manifest - Test manifest array
- * @param {Map} testDataMap - Map of test ID to metadata
- * @returns {number} Count of updated skipped statuses
- */
-function syncSkippedStatus(manifest, testDataMap) {
-    console.log('⏭️  Syncing Skipped status from code...');
-    let updateCount = 0;
-    
-    manifest.forEach(test => {
-        const codeMetadata = testDataMap.get(test.test_id);
-        
-        if (codeMetadata) {
-            const codeSkipped = codeMetadata.isSkipped || false;
-            const yamlSkipped = test.isSkipped || false;
-            
-            // Update if skipped status is different
-            if (yamlSkipped !== codeSkipped) {
-                console.log(`   [SKIPPED STATUS UPDATE] ${test.test_id}:`);
-                console.log(`      YAML: ${yamlSkipped}`);
-                console.log(`      CODE: ${codeSkipped}`);
-                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
-                
-                test.isSkipped = codeSkipped;
-                updateCount++;
-            }
-        }
-    });
-    
-    console.log(`   ✓ Updated ${updateCount} skipped status(es)`);
-    return updateCount;
-}
-
-/**
- *              test.tags = codeTags;
-                updateCount++;
-            }
-        }
-    });
-    
-    console.log(`   ✓ Updated ${updateCount} tag(s)`);
-    return updateCount;
+    console.log(`   ✓ Synced ${syncCount} test(s) with updates`);
+    console.log(`   ✓ Total tests processed: ${manifest.filter(t => testDataMap.has(t.test_id)).length}`);
+    return syncCount;
 }
 
 /**
@@ -590,35 +516,20 @@ function main() {
     // 3. Sync automation status (isAutomated flag)
     syncManifestWithCode(manifest, codeIds);
     
-    // 4. Sync test titles from code to manifest
-    syncTestTitles(manifest, testDataMap);
+    // 4. Sync ALL test metadata from code to YAML (force override)
+    syncAllTestMetadata(manifest, testDataMap);
     
-    // 5. Sync Jira IDs (bugId) from code to manifest
-    syncBugIds(manifest, testDataMap);
-    
-    // 6. Sync Priorities from code to manifest
-    syncPriorities(manifest, testDataMap);
-    
-    // 7. Sync Features from code to manifest
-    syncFeatures(manifest, testDataMap);
-    
-    // 8. Sync Tags from code to manifest
-    syncTags(manifest, testDataMap);
-    
-    // 9. Sync Skipped status from code to manifest
-    syncSkippedStatus(manifest, testDataMap);
-    
-    // 10. Detect shadow tests
+    // 5. Detect shadow tests
     const shadowTests = detectShadowTests(codeIds, yamlIds);
     
-    // 11. Save updated manifest
+    // 6. Save updated manifest
     saveManifestToYaml(manifest);
     
-    // 12. Calculate and save statistics
+    // 7. Calculate and save statistics
     const stats = calculateStatistics(manifest, yamlIds, shadowTests);
     saveStatistics(stats);
     
-    // 13. Display results and exit if needed
+    // 8. Display results and exit if needed
     displayResultsAndExit(stats, shadowTests.length > 0);
 }
 

@@ -1,18 +1,20 @@
 - test_id: TC-001
-  title: should not be able to login with invalid credentials
-  priority: P0
+  title: Invalid Login Credentials Test
+  priority: P2
   tags:
     - regression
     - auth
+    - negative
   bugId: SHOW-6959
   isAutomated: true
   type: authentication
   automation: ui
-  testFile: tests/login.spec.ts
-  testName: should not be able to login with invalid credentials
-  description: Validates that system blocks login attempts with incorrect
-    username/password combinations
-  expectedResult: Error message displayed and user remains on login page
+  testFile: tests/endUser/login.spec.ts
+  testName: Invalid Login Credentials Test
+  description: Verifies that the system prevents login with incorrect username and
+    password combination
+  expectedResult: null
+  isSkipped: false
 - test_id: TC-002
   title: should be login and navigate to Profile
   priority: P3
@@ -22,11 +24,12 @@
   bugId: null
   isAutomated: true
   type: profile
-  automation: ui
-  testFile: tests/login.spec.ts
-  testName: should be login and navigate to dashboard
-  description: Validates successful user authentication and redirection to main dashboard
-  expectedResult: User is logged in and redirected to dashboard with correct page title
+  automation: manual
+  testFile: tests/endUser/login.spec.ts
+  testName: should be login and navigate to Profile
+  description: null
+  expectedResult: expect(loginPage.page).toHaveTitle("Let's Shop");
+    expect(loginPage.page).toHaveURL(/dashboard/)
   isSkipped: true
 - test_id: TC-003
   title: should be login and navigate to dashboard
@@ -37,25 +40,28 @@
   bugId: null
   isAutomated: true
   type: user
-  automation: manual
-  testFile: null
-  testName: null
-  description: Validates user can request and complete password reset via email
-  expectedResult: Reset link sent to email, user can set new password successfully
+  automation: ui
+  testFile: tests/endUser/login.spec.ts
+  testName: should be login and navigate to dashboard
+  description: null
+  expectedResult: expect(loginPage.page).toHaveTitle("Let's Shop")
+  isSkipped: false
 - test_id: TC-004
-  title: Test from Admin login
-  priority: P0
+  title: Admin Login Test - Updated
+  priority: P1
   tags:
     - smoke
     - auth
+    - admin
   bugId: SHOW-6888
   isAutomated: true
-  type: registration
-  automation: manual
-  testFile: null
-  testName: null
-  description: Validates user can request and complete password reset via email
-  expectedResult: Reset link sent to email, user can set new password successfully
+  type: authentication
+  automation: ui
+  testFile: tests/Admin/login.spec.ts
+  testName: Admin Login Test - Updated
+  description: Validates that admin user can successfully login with valid credentials
+  expectedResult: null
+  isSkipped: false
 - test_id: TC-005
   title: Test from Admin logout
   priority: P0
@@ -66,8 +72,8 @@
   isAutomated: true
   type: registration
   automation: manual
-  testFile: null
-  testName: null
-  description: Validates user can request and complete password reset via email
-  expectedResult: Reset link sent to email, user can set new password successfully
+  testFile: tests/Admin/login.spec.ts
+  testName: Test from Admin logout
+  description: null
+  expectedResult: null
   isSkipped: true
