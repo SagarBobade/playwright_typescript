@@ -20,6 +20,10 @@ test.describe.serial('Login Tests', () => {
         page.close();
     });
 
+    /**
+     * for case
+     * @jira SHOW-6959
+     */
     test('should not be able to login with invalid credentials @TC-001', async ({ page }) => {
         await loginPage.navigateTo('client/#/auth/login');
         console.log("Current URL:- "+page.url());
