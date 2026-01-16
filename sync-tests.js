@@ -140,6 +140,7 @@ const coveragePercent = totalTests > 0 ? ((automatedCount / totalTests) * 100).t
 const stats = {
     totalManifested: totalTests,
     automated: automatedCount,
+    manual: totalTests - automatedCount,
     testCoverage: `${coveragePercent}%`, // The "Single Number" for stakeholders
     shadowTestsCount: missingInYaml.length,
     shadowTestsList: missingInYaml,
