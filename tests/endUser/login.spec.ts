@@ -35,10 +35,10 @@ test.describe.serial('Login Tests', () => {
         //TODO: Have assertion on toast message
     });
 
-    // @priority P0
-    // @feature authentication
-    test.skip('should be login and navigate to dashboard @TC-002', {
-        tag: ['@smoke', '@auth']}, async () => {
+    // @priority P3
+    // @feature profile
+    test.skip('should be login and navigate to Profile @TC-002', {
+        tag: ['@smoke', '@user']}, async () => {
         await loginPage.navigateTo('client/#/auth/login');
         const user = getUser();
         await loginPage.login(user.email, user.password);

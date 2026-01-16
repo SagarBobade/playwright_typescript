@@ -14,19 +14,20 @@
     username/password combinations
   expectedResult: Error message displayed and user remains on login page
 - test_id: TC-002
-  title: should be login and navigate to dashboard
-  priority: P0
+  title: should be login and navigate to Profile
+  priority: P3
   tags:
     - smoke
-    - auth
+    - user
   bugId: null
   isAutomated: true
-  type: authentication
+  type: profile
   automation: ui
   testFile: tests/login.spec.ts
   testName: should be login and navigate to dashboard
   description: Validates successful user authentication and redirection to main dashboard
   expectedResult: User is logged in and redirected to dashboard with correct page title
+  isSkipped: true
 - test_id: TC-003
   title: should be login and navigate to dashboard
   priority: P1

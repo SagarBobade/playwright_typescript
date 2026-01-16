@@ -205,11 +205,14 @@
     function generateTestRow(test) {
         const tagHtml = generateTagsHtml(test.tags);
         const bugLink = generateBugLink(test.bugId);
-        const statusPill = generateStatusPill(test.isAutomated);
+        // If test is skipped, show MANUAL status instead of automated status
+        const isAutomatedForDisplay = test.isSkipped ? false : test.isAutomated;
+        const statusPill = generateStatusPill(isAutomatedForDisplay);
+        const skippedLabel = test.isSkipped ? '<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:9px; margin-left:6px; font-weight:bold;">SKIPPED</span>' : '';
         
         return `
-            <tr>
-                <td><strong>${test.test_id}</strong></td>
+            <tr style="${test.isSkipped ? 'opacity: 0.6; background-color: #fff3cd;' : ''}">
+                <td><strong>${test.test_id}</strong>${skippedLabel}</td>
                 <td>${test.title || '-'}</td>
                 <td><span class="priority-label">${test.priority}</span></td>
                 <td>${tagHtml}</td>

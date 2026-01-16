@@ -12,11 +12,12 @@ const CONFIG = {
     testsDir: './tests',             // Directory where test spec files are located
     fileExtensions: ['.spec.ts', '.test.js', '.spec.js'], // File types to scan for test IDs
     idRegex: /TC-\d+/g,             // Regular expression pattern to match test IDs (e.g., TC-001, TC-042)
-    testPattern: /test\(['"](.*?)@(TC-\d+)['"]/g,  // Pattern to extract test title and ID together
+    testPattern: /test(?:\.skip)?\(['"](.*?)@(TC-\d+)['"]/g,  // Pattern to extract test title and ID together (including test.skip)
     jiraPattern: /@jira\s+([A-Za-z]+-\d+)/gi,  // Pattern to extract Jira IDs (e.g., @jira SHOW-1234)
     priorityPattern: /@priority\s+(P\d+)/gi,  // Pattern to extract priority (e.g., @priority P0)
     featurePattern: /@feature\s+(\w+)/gi,  // Pattern to extract feature (e.g., @feature login)
-    testTitleTagPattern: /@([\w-]+)/g  // Pattern to extract tags from test title (e.g., @smoke @regression)
+    testTitleTagPattern: /@([\w-]+)/g,  // Pattern to extract tags from test title (e.g., @smoke @regression)
+    skipPattern: /test\.skip\(['"](.*?)@(TC-\d+)['"]/g  // Pattern to detect skipped tests (e.g., test.skip('title @TC-001'))
 };
 
 /**
@@ -53,7 +54,7 @@ function extractTestMetadata(filePath) {
     // Helper function to find associated test ID
     function findAssociatedTestId(position, content) {
         const searchWindow = content.substring(position, position + 500);
-        const testInWindow = searchWindow.match(/test\(['"](.*?)@(TC-\d+)['"]/i);
+        const testInWindow = searchWindow.match(/test(?:\.skip)?\(['"](.*?)@(TC-\d+)['"]/i);
         return testInWindow ? testInWindow[2] : null;
     }
     
@@ -61,6 +62,7 @@ function extractTestMetadata(filePath) {
     const jiraMap = new Map();
     const priorityMap = new Map();
     const featureMap = new Map();
+    const skippedMap = new Map();
     const tagsMap = new Map();
     
     // Extract Jira IDs
@@ -90,9 +92,19 @@ function extractTestMetadata(filePath) {
         if (testId) featureMap.set(testId, feature);
     }
     
+    // Extract Skipped tests
+    const skipPattern = new RegExp(CONFIG.skipPattern.source, CONFIG.skipPattern.flags);
+    let skipMatch;
+    while ((skipMatch = skipPattern.exec(content)) !== null) {
+        const testId = skipMatch[2];
+        skippedMap.set(testId, true);
+    }
+    
+    // Extract 
     // Extract Tags from Playwright's tag property in test options
     // Pattern to match: test('title @TC-XXX', { tag: ['@smoke', '@auth'] }, async...
-    const tagPropertyPattern = /test\(['"](.*?)@(TC-\d+)['"]\s*,\s*\{[^}]*tag:\s*\[([^\]]+)\]/g;
+    // Also matches test.skip('title @TC-XXX', { tag: [...] }, async...
+    const tagPropertyPattern = /test(?:\.skip)?\(['"](.*?)@(TC-\d+)['"]\s*,\s*\{[^}]*tag:\s*\[([^\]]+)\]/g;
     let tagPropertyMatch;
     while ((tagPropertyMatch = tagPropertyPattern.exec(content)) !== null) {
         const testId = tagPropertyMatch[2];
@@ -123,6 +135,7 @@ function extractTestMetadata(filePath) {
         const priority = priorityMap.get(testId) || null;
         const feature = featureMap.get(testId) || null;
         const tags = tagsMap.get(testId) || null;
+        const isSkipped = skippedMap.get(testId) || false;
         
         testDataMap.set(testId, {
             title: title,
@@ -131,7 +144,8 @@ function extractTestMetadata(filePath) {
             bugId: bugId,
             priority: priority,
             feature: feature,
-            tags: tags
+            tags: tags,
+            isSkipped: isSkipped
         });
         
         const metaInfo = [];
@@ -139,6 +153,7 @@ function extractTestMetadata(filePath) {
         if (priority) metaInfo.push(`Priority: ${priority}`);
         if (feature) metaInfo.push(`Feature: ${feature}`);
         if (tags) metaInfo.push(`Tags: ${tags.join(', ')}`);
+        if (isSkipped) metaInfo.push(`⚠️ SKIPPED`);
         const metaStr = metaInfo.length > 0 ? ` [${metaInfo.join(' | ')}]` : '';
         console.log(`      ↳ Extracted: ${testId} - "${title}" (line ${lineNumber})${metaStr}`);
     }
@@ -375,6 +390,51 @@ function syncTags(manifest, testDataMap) {
 }
 
 /**
+ * Sync Skipped status from code to YAML manifest
+ * @param {Array} manifest - Test manifest array
+ * @param {Map} testDataMap - Map of test ID to metadata
+ * @returns {number} Count of updated skipped statuses
+ */
+function syncSkippedStatus(manifest, testDataMap) {
+    console.log('⏭️  Syncing Skipped status from code...');
+    let updateCount = 0;
+    
+    manifest.forEach(test => {
+        const codeMetadata = testDataMap.get(test.test_id);
+        
+        if (codeMetadata) {
+            const codeSkipped = codeMetadata.isSkipped || false;
+            const yamlSkipped = test.isSkipped || false;
+            
+            // Update if skipped status is different
+            if (yamlSkipped !== codeSkipped) {
+                console.log(`   [SKIPPED STATUS UPDATE] ${test.test_id}:`);
+                console.log(`      YAML: ${yamlSkipped}`);
+                console.log(`      CODE: ${codeSkipped}`);
+                console.log(`      FILE: ${codeMetadata.filePath}:${codeMetadata.lineNumber}`);
+                
+                test.isSkipped = codeSkipped;
+                updateCount++;
+            }
+        }
+    });
+    
+    console.log(`   ✓ Updated ${updateCount} skipped status(es)`);
+    return updateCount;
+}
+
+/**
+ *              test.tags = codeTags;
+                updateCount++;
+            }
+        }
+    });
+    
+    console.log(`   ✓ Updated ${updateCount} tag(s)`);
+    return updateCount;
+}
+
+/**
  * Compare two arrays for equality (order-independent)
  * @param {Array} arr1 - First array
  * @param {Array} arr2 - Second array
@@ -474,6 +534,29 @@ function saveStatistics(stats) {
     console.log('   ✓ Statistics saved to summary-stats.json');
 }
 
+/**Sync Skipped status from code to manifest
+    syncSkippedStatus(manifest, testDataMap);
+    
+    // 10. Detect shadow tests
+    const shadowTests = detectShadowTests(codeIds, yamlIds);
+    
+    // 11. Save updated manifest
+    saveManifestToYaml(manifest);
+    
+    // 12. Calculate and save statistics
+    const stats = calculateStatistics(manifest, yamlIds, shadowTests);
+    saveStatistics(stats);
+    
+/**
+ * Save statistics to JSON file
+ * @param {Object} stats - Statistics object
+ */
+function saveStatistics(stats) {
+    console.log('📊 Saving statistics...');
+    fs.writeFileSync('./summary-stats.json', JSON.stringify(stats, null, 2));
+    console.log('   ✓ Statistics saved to summary-stats.json');
+}
+
 /**
  * Display final results and exit if needed
  * @param {Object} stats - Statistics object
@@ -519,17 +602,20 @@ function main() {
     // 8. Sync Tags from code to manifest
     syncTags(manifest, testDataMap);
     
-    // 9. Detect shadow tests
+    // 9. Sync Skipped status from code to manifest
+    syncSkippedStatus(manifest, testDataMap);
+    
+    // 10. Detect shadow tests
     const shadowTests = detectShadowTests(codeIds, yamlIds);
     
-    // 10. Save updated manifest
+    // 11. Save updated manifest
     saveManifestToYaml(manifest);
     
-    // 11. Calculate and save statistics
+    // 12. Calculate and save statistics
     const stats = calculateStatistics(manifest, yamlIds, shadowTests);
     saveStatistics(stats);
     
-    // 12. Display results and exit if needed
+    // 13. Display results and exit if needed
     displayResultsAndExit(stats, shadowTests.length > 0);
 }
 
