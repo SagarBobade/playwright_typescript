@@ -15,59 +15,53 @@ const CONFIG = {
 };
 
 /**
- * 1. Read and Parse the YAML Manifest
+ * Read and parse the YAML manifest file
+ * @returns {Object} Object containing manifest array and extracted test IDs
  */
-// Read the YAML file synchronously and store content as UTF-8 string
-const file = fs.readFileSync(CONFIG.yamlPath, 'utf8');
-// Parse YAML string into JavaScript object/array structure
-const manifest = YAML.parse(file);
-// Validate that the YAML root is an array (tests should be a list)
-if (!Array.isArray(manifest)) {
-    console.error("❌ ERROR: tests.yaml must be a list (starting with dashes '- ').");
-    console.log("Current type detected:", typeof manifest);
-    process.exit(1); // Exit with error code 1 (failure)
+function loadYamlManifest() {
+    console.log('📄 Loading YAML manifest...');
+    const file = fs.readFileSync(CONFIG.yamlPath, 'utf8');
+    const manifest = YAML.parse(file);
+    
+    // Validate that the YAML root is an array
+    if (!Array.isArray(manifest)) {
+        console.error("❌ ERROR: tests.yaml must be a list (starting with dashes '- ').");
+        console.log("Current type detected:", typeof manifest);
+        process.exit(1);
+    }
+    
+    const yamlIds = manifest.map(item => item.test_id);
+    console.log(`   ✓ Loaded ${manifest.length} tests from manifest`);
+    
+    return { manifest, yamlIds };
 }
-// Extract all test_id values from the manifest into an array for quick lookup
-const yamlIds = manifest.map(item => item.test_id);
 
 /**
- * 2. Recursively find all IDs in the code
+ * Recursively scan a directory for test files and extract test IDs
+ * @param {string} dir - Directory path to scan
+ * @param {Set} codeIds - Set to store found test IDs
  */
-// Create a Set data structure to store unique test IDs found in code (prevents duplicates)
-const codeIds = new Set();
-
-// Recursive function to scan directories and subdirectories for test files
-function scanDirectory(dir) {
-    // Read all files and folders in the current directory
+function scanDirectory(dir, codeIds) {
     const files = fs.readdirSync(dir);
     console.log(`📁 Scanning directory: ${dir}`);
     console.log(`   Found ${files.length} items:`, files);
     
-    // Loop through each file/folder in the directory
     files.forEach(file => {
         console.log(`   Processing: ${file}`);
-        // Create full path by joining directory and filename
         const filePath = path.join(dir, file);
-        // Get file/folder metadata (size, type, etc.)
         const stat = fs.statSync(filePath);
 
-        // Check if current item is a directory (folder)
         if (stat.isDirectory()) {
             console.log(`      ↳ Directory detected, recursing...`);
-            // If it's a folder, recursively scan it
-            scanDirectory(filePath);
+            scanDirectory(filePath, codeIds);
         } 
-        // Check if current file matches any of the test file patterns (.spec.ts, .test.js, etc.)
         else if (CONFIG.fileExtensions.some(ext => file.endsWith(ext))) {
             console.log(`      ↳ Test file matched!`);
-            // Read the test file content as UTF-8 string
             const content = fs.readFileSync(filePath, 'utf8');
-            // Find all matches of the test ID pattern (TC-XXX) in the file
             const matches = content.match(CONFIG.idRegex);
             console.log(`      ↳ Found ${matches ? matches.length : 0} test IDs:`, matches);
-            // If matches were found in this file
+            
             if (matches) {
-                // Add each found test ID to the Set (duplicates automatically ignored)
                 matches.forEach(id => codeIds.add(id));
             }
         } else {
@@ -76,89 +70,148 @@ function scanDirectory(dir) {
     });
 }
 
-// Log message indicating scan is starting
-console.log('🔍 Scanning codebase for Test IDs...');
-// Start the recursive directory scan from the tests folder
-scanDirectory(CONFIG.testsDir);
+/**
+ * Scan the codebase for test IDs
+ * @returns {Set} Set of test IDs found in code
+ */
+function scanCodebaseForTestIds() {
+    console.log('🔍 Scanning codebase for Test IDs...');
+    const codeIds = new Set();
+    scanDirectory(CONFIG.testsDir, codeIds);
+    console.log(`   ✓ Found ${codeIds.size} unique test IDs in code`);
+    return codeIds;
+}
 
 /**
- * 3. Bi-directional Comparison Logic
+ * Update manifest to sync isAutomated flag with actual code presence
+ * @param {Array} manifest - Test manifest array
+ * @param {Set} codeIds - Set of test IDs found in code
  */
-// Flag to track if any errors were found during validation
-let hasError = false;
-
-// Check Direction A: In YAML but missing from Code
-// Loop through each test defined in the YAML manifest
-manifest.forEach(test => {
-    // Check if this test ID exists in the codebase
-    const existsInCode = codeIds.has(test.test_id);
+function syncManifestWithCode(manifest, codeIds) {
+    console.log('🔄 Syncing manifest with code...');
+    let updateCount = 0;
     
-    // If the isAutomated flag doesn't match actual code presence
-    if (test.isAutomated !== existsInCode) {
-        // Log that we're updating the isAutomated flag to match reality
-        console.log(`[UPDATE] ${test.test_id}: isAutomated changed to ${existsInCode}`);
-        // Update the isAutomated property in the manifest object
-        test.isAutomated = existsInCode;
-    }
-});
-
-// Check Direction B: In Code but missing from YAML (Shadow Automation)
-// Find test IDs that exist in code but are NOT registered in YAML manifest
-const missingInYaml = Array.from(codeIds).filter(id => !yamlIds.includes(id));
-
-// If there are unregistered tests (shadow tests)
-if (missingInYaml.length > 0) {
-    // Log error message indicating shadow tests were found
-    console.error('\n❌ ERROR: Shadow Tests Detected!');
-    console.error('The following IDs exist in code but are NOT registered in tests.yaml:');
-    // Display the list of unregistered test IDs
-    console.error(missingInYaml.join(', '));
-    // Set error flag to true (will cause process to exit with error later)
-    hasError = true;
+    manifest.forEach(test => {
+        const existsInCode = codeIds.has(test.test_id);
+        
+        if (test.isAutomated !== existsInCode) {
+            console.log(`   [UPDATE] ${test.test_id}: isAutomated changed to ${existsInCode}`);
+            test.isAutomated = existsInCode;
+            updateCount++;
+        }
+    });
+    
+    console.log(`   ✓ Updated ${updateCount} test(s)`);
 }
 
 /**
- * 4. Update the YAML and Save Stats
+ * Detect shadow tests (tests in code but not in manifest)
+ * @param {Set} codeIds - Set of test IDs found in code
+ * @param {Array} yamlIds - Array of test IDs from manifest
+ * @returns {Array} Array of shadow test IDs
  */
-// Convert the updated manifest object back to YAML format string
-const updatedYaml = YAML.stringify(manifest);
-// Write the updated YAML back to the file (overwrites existing content)
-fs.writeFileSync(CONFIG.yamlPath, updatedYaml);
-
-// Calculate Coverage Percentage based on isAutomated flag
-const totalTests = yamlIds.length;
-console.log('Debug - yamlIds:', yamlIds);
-console.log('Debug - yamlIds.length:', totalTests);
-// Count tests marked as automated in the manifest
-const automatedCount = manifest.filter(test => test.isAutomated === true).length;
-console.log('Debug - manifest.length:', manifest.length);
-console.log('Debug - automatedCount:', automatedCount);
-// Avoid division by zero if manifest is empty
-const coveragePercent = totalTests > 0 ? ((automatedCount / totalTests) * 100).toFixed(2) : 0;
-
-// Create statistics object with current sync results
-const stats = {
-    totalManifested: totalTests,
-    automated: automatedCount,
-    manual: totalTests - automatedCount,
-    testCoverage: `${coveragePercent}%`, // The "Single Number" for stakeholders
-    shadowTestsCount: missingInYaml.length,
-    shadowTestsList: missingInYaml,
-    timestamp: new Date().toISOString()
-};
-
-// Write statistics to a JSON file for tracking/reporting purposes
-fs.writeFileSync('./summary-stats.json', JSON.stringify(stats, null, 2));
-
-// Log success message
-console.log('\n✅ Sync Complete!');
-// Display statistics in a formatted table in the console
-console.table(stats);
-
-// If any shadow tests were detected
-if (hasError) {
-    // Display action required message
-    console.error('\nAction Required: Please register the shadow tests in tests.yaml.');
-    // Exit process with error code 1 (this will fail CI/CD pipeline)
-    process.exit(1); // Fails the CI Build
+function detectShadowTests(codeIds, yamlIds) {
+    const missingInYaml = Array.from(codeIds).filter(id => !yamlIds.includes(id));
+    
+    if (missingInYaml.length > 0) {
+        console.error('\n❌ ERROR: Shadow Tests Detected!');
+        console.error('The following IDs exist in code but are NOT registered in tests.yaml:');
+        console.error(missingInYaml.join(', '));
+    }
+    
+    return missingInYaml;
 }
+
+/**
+ * Save updated manifest back to YAML file
+ * @param {Array} manifest - Updated test manifest array
+ */
+function saveManifestToYaml(manifest) {
+    console.log('💾 Saving updated manifest...');
+    const updatedYaml = YAML.stringify(manifest);
+    fs.writeFileSync(CONFIG.yamlPath, updatedYaml);
+    console.log('   ✓ Manifest saved successfully');
+}
+
+/**
+ * Calculate test automation statistics
+ * @param {Array} manifest - Test manifest array
+ * @param {Array} yamlIds - Array of test IDs from manifest
+ * @param {Array} shadowTests - Array of shadow test IDs
+ * @returns {Object} Statistics object
+ */
+function calculateStatistics(manifest, yamlIds, shadowTests) {
+    const totalTests = yamlIds.length;
+    const automatedCount = manifest.filter(test => test.isAutomated === true).length;
+    const coveragePercent = totalTests > 0 ? ((automatedCount / totalTests) * 100).toFixed(2) : 0;
+    
+    console.log('Debug - yamlIds:', yamlIds);
+    console.log('Debug - yamlIds.length:', totalTests);
+    console.log('Debug - manifest.length:', manifest.length);
+    console.log('Debug - automatedCount:', automatedCount);
+    
+    return {
+        totalManifested: totalTests,
+        automated: automatedCount,
+        manual: totalTests - automatedCount,
+        testCoverage: `${coveragePercent}%`,
+        shadowTestsCount: shadowTests.length,
+        shadowTestsList: shadowTests,
+        timestamp: new Date().toISOString()
+    };
+}
+
+/**
+ * Save statistics to JSON file
+ * @param {Object} stats - Statistics object
+ */
+function saveStatistics(stats) {
+    console.log('📊 Saving statistics...');
+    fs.writeFileSync('./summary-stats.json', JSON.stringify(stats, null, 2));
+    console.log('   ✓ Statistics saved to summary-stats.json');
+}
+
+/**
+ * Display final results and exit if needed
+ * @param {Object} stats - Statistics object
+ * @param {boolean} hasError - Whether shadow tests were detected
+ */
+function displayResultsAndExit(stats, hasError) {
+    console.log('\n✅ Sync Complete!');
+    console.table(stats);
+    
+    if (hasError) {
+        console.error('\nAction Required: Please register the shadow tests in tests.yaml.');
+        process.exit(1); // Fails the CI Build
+    }
+}
+
+/**
+ * Main execution function
+ */
+function main() {
+    // 1. Load YAML manifest
+    const { manifest, yamlIds } = loadYamlManifest();
+    
+    // 2. Scan codebase for test IDs
+    const codeIds = scanCodebaseForTestIds();
+    
+    // 3. Sync manifest with code
+    syncManifestWithCode(manifest, codeIds);
+    
+    // 4. Detect shadow tests
+    const shadowTests = detectShadowTests(codeIds, yamlIds);
+    
+    // 5. Save updated manifest
+    saveManifestToYaml(manifest);
+    
+    // 6. Calculate and save statistics
+    const stats = calculateStatistics(manifest, yamlIds, shadowTests);
+    saveStatistics(stats);
+    
+    // 7. Display results and exit if needed
+    displayResultsAndExit(stats, shadowTests.length > 0);
+}
+
+// Execute main function
+main();
