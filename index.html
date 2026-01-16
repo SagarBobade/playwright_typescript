@@ -554,9 +554,20 @@
         
         Object.keys(featureData).forEach(feature => {
             const color = featureColors[feature] || featureColors.uncategorized;
+            const hasAutomated = featureData[feature].automated > 0;
+            const hasManual = featureData[feature].manual > 0;
+            const hasBothTypes = hasAutomated && hasManual;
+            
+            // Calculate coverage percentage if feature has both types
+            let coverageText = '';
+            if (hasBothTypes) {
+                const totalTests = featureData[feature].automated + featureData[feature].manual;
+                const coveragePercent = ((featureData[feature].automated / totalTests) * 100).toFixed(1);
+                coverageText = ` [${coveragePercent}%]`;
+            }
             
             if (featureData[feature].automated > 0) {
-                labels.push(`${feature} (Auto)`);
+                labels.push(`${feature} (Auto)${coverageText}`);
                 data.push(featureData[feature].automated);
                 backgroundColors.push(color); // Solid color for automated
                 borderColors.push(color);
@@ -608,8 +619,21 @@
                                 const label = context.label || '';
                                 const value = context.parsed || 0;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${label}: ${value} (${percentage}%)`;
+                                const piePercentage = ((value / total) * 100).toFixed(1);
+                                
+                                // Check if label has coverage info
+                                const coverageMatch = label.match(/\[(\d+\.?\d*)% coverage\]/);
+                                const cleanLabel = label.replace(/\s*\[.*?\]\s*$/, '');
+                                
+                                let tooltipText = `${cleanLabel}: ${value} tests (${piePercentage}% of all tests)`;
+                                
+                                // Add coverage explanation if present
+                                if (coverageMatch) {
+                                    const coveragePercent = coverageMatch[1];
+                                    tooltipText += `\n${coveragePercent}% automated for this feature`;
+                                }
+                                
+                                return tooltipText;
                             }
                         }
                     }
