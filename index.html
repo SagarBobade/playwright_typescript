@@ -100,124 +100,241 @@
     </table>
 
 <script>
-    async function loadDashboard() {
-        try {
-            console.log('Starting to load dashboard...');
-            
-            // 1. Fetch JSON Stats (KPIs)
-            console.log('Fetching summary-stats.json...');
-            const statsRes = await fetch('./summary-stats.json');
-            console.log('Stats response:', statsRes.status, statsRes.ok);
-            if (!statsRes.ok) throw new Error(`Failed to fetch summary-stats.json: ${statsRes.status}`);
-            const stats = await statsRes.json();
-            console.log('Stats loaded:', stats);
-            
-            document.getElementById('total-tests').innerText = stats.totalManifested;
-            document.getElementById('automated-count').innerText = stats.automated;
-            document.getElementById('manual-count').innerText = stats.manual;
-            document.getElementById('coverage-percent').innerText = stats.testCoverage;
+    // ==================== DATA FETCHING ====================
+    
+    /**
+     * Fetch summary statistics from JSON file
+     * @returns {Promise<Object>} Statistics object
+     */
+    async function fetchStatistics() {
+        console.log('Fetching summary-stats.json...');
+        const response = await fetch('./summary-stats.json');
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch summary-stats.json: ${response.status}`);
+        }
+        
+        const stats = await response.json();
+        console.log('Stats loaded:', stats);
+        return stats;
+    }
 
-            if (stats.shadowTestsCount > 0) {
-                document.getElementById('shadow-alert').style.display = 'block';
-                document.getElementById('shadow-list').innerText = stats.shadowTestsList.join(', ');
-            }
+    /**
+     * Fetch and parse YAML test manifest
+     * @returns {Promise<Array>} Array of test objects
+     */
+    async function fetchTestManifest() {
+        console.log('Fetching tests.yml...');
+        const response = await fetch('./tests.yml');
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch tests.yml: ${response.status}`);
+        }
+        
+        const yamlText = await response.text();
+        console.log('YAML text loaded, length:', yamlText.length);
+        
+        const tests = jsyaml.load(yamlText);
+        console.log('YAML parsed, number of tests:', tests.length);
+        return tests;
+    }
 
-            // 2. Fetch and Parse YAML (Detailed Manifest)
-            console.log('Fetching tests.yml...');
-            const yamlRes = await fetch('./tests.yml');
-            console.log('YAML response:', yamlRes.status, yamlRes.ok);
-            if (!yamlRes.ok) throw new Error(`Failed to fetch tests.yml: ${yamlRes.status}`);
-            const yamlText = await yamlRes.text();
-            console.log('YAML text loaded, length:', yamlText.length);
-            console.log('First 100 chars:', yamlText.substring(0, 100));
-            const tests = jsyaml.load(yamlText);
-            console.log('YAML parsed, tests:', tests);
-            console.log('Number of tests:', tests.length);
-            console.log('Test IDs:', tests.map(t => t.test_id));
+    // ==================== UI RENDERING ====================
+    
+    /**
+     * Update statistics cards in the UI
+     * @param {Object} stats - Statistics object
+     */
+    function renderStatistics(stats) {
+        document.getElementById('total-tests').innerText = stats.totalManifested;
+        document.getElementById('automated-count').innerText = stats.automated;
+        document.getElementById('manual-count').innerText = stats.manual;
+        document.getElementById('coverage-percent').innerText = stats.testCoverage;
+    }
 
-            const tableBody = document.getElementById('test-table-body');
-            tableBody.innerHTML = ''; // Clear existing content
-
-            tests.forEach((test, index) => {
-                console.log(`Rendering test ${index + 1}:`, test.test_id);
-                // Logic to handle tags and turn them into small badges
-                const tagHtml = (test.tags || [])
-                    .map(tag => `<span style="background:#eee; padding:2px 6px; border-radius:10px; font-size:10px; margin-right:4px; border:1px solid #ddd;">${tag}</span>`)
-                    .join('');
-
-                const row = `
-                    <tr>
-                        <td><strong>${test.test_id}</strong></td>
-                        <td>${test.title || '-'}</td>
-                        <td><span class="priority-label">${test.priority}</span></td>
-                        <td>${tagHtml}</td>
-                        <td>
-                            ${test.bugId ? `<a href="YOUR_JIRA_URL/${test.bugId}" target="_blank" style="color:#3498db; text-decoration:none;">${test.bugId}</a>` : '-'}
-                        </td>
-                        <td>${test.type || '-'}</td>
-                        <td>
-                            <span class="status-pill ${test.isAutomated ? 'automated' : 'manual'}">
-                                ${test.isAutomated ? 'AUTOMATED' : 'MANUAL'}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-
-        } catch (err) {
-            console.error("Failed to load dashboard data:", err);
-            document.body.innerHTML += `<p style="color:red; padding:20px;">Error loading data. Check if tests.yml and summary-stats.json exist in the root folder.</p>`;
+    /**
+     * Display shadow tests alert if any exist
+     * @param {Object} stats - Statistics object with shadow test info
+     */
+    function renderShadowAlert(stats) {
+        if (stats.shadowTestsCount > 0) {
+            document.getElementById('shadow-alert').style.display = 'block';
+            document.getElementById('shadow-list').innerText = stats.shadowTestsList.join(', ');
         }
     }
 
-    // Filter function with typeahead - supports multi-column filtering
+    /**
+     * Generate HTML for test tags
+     * @param {Array} tags - Array of tag strings
+     * @returns {string} HTML string for tags
+     */
+    function generateTagsHtml(tags) {
+        if (!tags || tags.length === 0) return '';
+        
+        return tags
+            .map(tag => `<span style="background:#eee; padding:2px 6px; border-radius:10px; font-size:10px; margin-right:4px; border:1px solid #ddd;">${tag}</span>`)
+            .join('');
+    }
+
+    /**
+     * Generate HTML for bug ID link
+     * @param {string} bugId - Bug ID
+     * @returns {string} HTML string for bug link
+     */
+    function generateBugLink(bugId) {
+        if (!bugId) return '-';
+        return `<a href="YOUR_JIRA_URL/${bugId}" target="_blank" style="color:#3498db; text-decoration:none;">${bugId}</a>`;
+    }
+
+    /**
+     * Generate HTML for automation status pill
+     * @param {boolean} isAutomated - Whether test is automated
+     * @returns {string} HTML string for status pill
+     */
+    function generateStatusPill(isAutomated) {
+        const statusClass = isAutomated ? 'automated' : 'manual';
+        const statusText = isAutomated ? 'AUTOMATED' : 'MANUAL';
+        return `<span class="status-pill ${statusClass}">${statusText}</span>`;
+    }
+
+    /**
+     * Generate HTML for a single test row
+     * @param {Object} test - Test object
+     * @returns {string} HTML string for table row
+     */
+    function generateTestRow(test) {
+        const tagHtml = generateTagsHtml(test.tags);
+        const bugLink = generateBugLink(test.bugId);
+        const statusPill = generateStatusPill(test.isAutomated);
+        
+        return `
+            <tr>
+                <td><strong>${test.test_id}</strong></td>
+                <td>${test.title || '-'}</td>
+                <td><span class="priority-label">${test.priority}</span></td>
+                <td>${tagHtml}</td>
+                <td>${bugLink}</td>
+                <td>${test.type || '-'}</td>
+                <td>${statusPill}</td>
+            </tr>
+        `;
+    }
+
+    /**
+     * Render test table with all tests
+     * @param {Array} tests - Array of test objects
+     */
+    function renderTestTable(tests) {
+        const tableBody = document.getElementById('test-table-body');
+        tableBody.innerHTML = ''; // Clear existing content
+        
+        tests.forEach((test, index) => {
+            console.log(`Rendering test ${index + 1}:`, test.test_id);
+            tableBody.innerHTML += generateTestRow(test);
+        });
+        
+        console.log(`Rendered ${tests.length} tests to table`);
+    }
+
+    // ==================== FILTERING ====================
+    
+    /**
+     * Apply all column filters to table rows
+     * @param {Array} filters - Array of filter objects with column and value
+     * @param {HTMLElement} tbody - Table body element
+     */
+    function applyFiltersToTable(filters, tbody) {
+        const rows = tbody.getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            let showRow = true;
+            
+            // Check if row matches all active filters
+            for (let filter of filters) {
+                if (filter.value) {
+                    const cell = row.getElementsByTagName('td')[filter.column];
+                    if (cell) {
+                        const cellText = (cell.textContent || cell.innerText).toLowerCase();
+                        if (cellText.indexOf(filter.value) === -1) {
+                            showRow = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            row.style.display = showRow ? '' : 'none';
+        }
+    }
+
+    /**
+     * Setup multi-column search filters with typeahead
+     */
     function setupColumnFilters() {
         const searchInputs = document.querySelectorAll('.header-search');
         const tbody = document.getElementById('test-table-body');
         
-        // Function to apply all filters
         function applyAllFilters() {
-            const rows = tbody.getElementsByTagName('tr');
-            
-            // Get all search values
             const filters = Array.from(searchInputs).map(input => ({
                 column: parseInt(input.dataset.column),
                 value: input.value.toLowerCase()
             }));
             
-            // Check each row
-            for (let row of rows) {
-                let showRow = true;
-                
-                // Check if row matches all active filters
-                for (let filter of filters) {
-                    if (filter.value) { // Only check if there's a search value
-                        const cell = row.getElementsByTagName('td')[filter.column];
-                        if (cell) {
-                            const cellText = (cell.textContent || cell.innerText).toLowerCase();
-                            if (cellText.indexOf(filter.value) === -1) {
-                                showRow = false;
-                                break; // No need to check other filters
-                            }
-                        }
-                    }
-                }
-                
-                row.style.display = showRow ? '' : 'none';
-            }
+            applyFiltersToTable(filters, tbody);
         }
         
-        // Add event listener to each search input
         searchInputs.forEach(input => {
             input.addEventListener('keyup', applyAllFilters);
         });
+        
+        console.log('Column filters setup complete');
     }
 
-    // Load dashboard and then setup filters
-    loadDashboard().then(() => {
+    // ==================== ERROR HANDLING ====================
+    
+    /**
+     * Display error message to user
+     * @param {Error} error - Error object
+     */
+    function displayError(error) {
+        console.error("Failed to load dashboard data:", error);
+        document.body.innerHTML += `<p style="color:red; padding:20px;">Error loading data. Check if tests.yml and summary-stats.json exist in the root folder.</p>`;
+    }
+
+    // ==================== MAIN INITIALIZATION ====================
+    
+    /**
+     * Load and render the complete dashboard
+     */
+    async function loadDashboard() {
+        try {
+            console.log('Starting to load dashboard...');
+            
+            // Fetch data
+            const stats = await fetchStatistics();
+            const tests = await fetchTestManifest();
+            
+            // Render UI
+            renderStatistics(stats);
+            renderShadowAlert(stats);
+            renderTestTable(tests);
+            
+            console.log('Dashboard loaded successfully');
+        } catch (error) {
+            displayError(error);
+        }
+    }
+
+    /**
+     * Initialize the dashboard application
+     */
+    async function initializeDashboard() {
+        await loadDashboard();
         setupColumnFilters();
-    });
+    }
+
+    // Start the application
+    initializeDashboard();
 </script>
 </body>
 </html>
