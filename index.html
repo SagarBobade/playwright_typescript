@@ -32,6 +32,10 @@
             <p id="automated-count">-</p>
         </div>
         <div class="stat-card">
+            <h3>Manual</h3>
+            <p id="manual-count">-</p>
+        </div>
+        <div class="stat-card">
             <h3>Coverage</h3>
             <p id="coverage-percent">-</p>
         </div>
@@ -72,6 +76,7 @@
             
             document.getElementById('total-tests').innerText = stats.totalManifested;
             document.getElementById('automated-count').innerText = stats.automated;
+            document.getElementById('manual-count').innerText = stats.manual;
             document.getElementById('coverage-percent').innerText = stats.testCoverage;
 
             if (stats.shadowTestsCount > 0) {
