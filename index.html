@@ -6,24 +6,165 @@
     <title>Test Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #4CAF50; color: white; position: relative; }
-        tr:hover { background-color: #f5f5f5; }
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f0f0f0;
+            --bg-hover: #f5f5f5;
+            --text-primary: #000000;
+            --text-secondary: #333333;
+            --border-color: #ddd;
+            --header-bg: #4CAF50;
+            --header-text: white;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --tag-bg: #eee;
+            --tag-border: #ddd;
+            --tag-text: #333;
+            --skipped-bg: #fff3cd;
+        }
+        
+        [data-theme="dark"] {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-hover: #3d3d3d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --border-color: #444;
+            --header-bg: #2d5016;
+            --header-text: #e0e0e0;
+            --shadow: rgba(255, 255, 255, 0.1);
+            --tag-bg: #3a3a3a;
+            --tag-border: #555;
+            --tag-text: #d0d0d0;
+            --skipped-bg: #3d3516;
+        }
+        
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .bug-icon {
+            font-size: 32px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .bug-icon:hover {
+            transform: scale(1.1);
+        }
+        
+        .theme-toggle {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s;
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(20deg);
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px;
+            background-color: var(--bg-primary);
+        }
+        th, td { 
+            border: 1px solid var(--border-color); 
+            padding: 12px; 
+            text-align: left;
+            color: var(--text-primary);
+        }
+        th { 
+            background-color: var(--header-bg); 
+            color: var(--header-text); 
+            position: relative; 
+        }
+        tr:hover { background-color: var(--bg-hover); }
         .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
         .automated { background: #27ae60; color: white; }
         .manual { background: #95a5a6; color: white; }
+        .tag-item {
+            background: var(--tag-bg);
+            color: var(--tag-text);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-right: 4px;
+            border: 1px solid var(--tag-border);
+            display: inline-block;
+        }
+        .skipped-row {
+            opacity: 0.75;
+            background-color: var(--skipped-bg) !important;
+        }
+        .skipped-label {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+            margin-left: 6px;
+            font-weight: bold;
+        }
         .priority-label { font-weight: bold; }
         #stats { display: flex; gap: 20px; margin-bottom: 20px; }
-        .stat-card { padding: 15px; background: #f0f0f0; border-radius: 8px; }
-        .header-search { width: 100%; padding: 5px; margin-top: 5px; border: none; border-radius: 3px; font-size: 12px; }
+        .stat-card { 
+            padding: 15px; 
+            background: var(--bg-secondary); 
+            border-radius: 8px;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s;
+        }
+        .header-search { 
+            width: 100%; 
+            padding: 5px; 
+            margin-top: 5px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 3px; 
+            font-size: 12px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
         .header-content { display: flex; flex-direction: column; }
         .header-label { margin-bottom: 5px; }
     </style>
 </head>
 <body>
-    <h1>Tests Dashboard</h1>
+    <div class="header-container">
+        <div class="header-left">
+            <h1 style="margin: 0;">Tests Dashboard</h1>
+        </div>
+        <button class="theme-toggle" id="theme-toggle" title="Toggle Dark/Light Mode">
+            <span id="theme-icon">🐞</span>
+        </button>
+    </div>
     
     <div id="stats">
         <div class="stat-card">
@@ -100,6 +241,48 @@
     </table>
 
 <script>
+    // ==================== THEME MANAGEMENT ====================
+    
+    /**
+     * Initialize theme from localStorage or system preference
+     */
+    function initializeTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+        
+        setTheme(theme);
+    }
+    
+    /**
+     * Set the theme and update UI
+     * @param {string} theme - 'light' or 'dark'
+     */
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        
+        const themeIcon = document.getElementById('theme-icon');
+        themeIcon.textContent = '🐞';
+    }
+    
+    /**
+     * Toggle between light and dark themes
+     */
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+    }
+    
+    /**
+     * Setup theme toggle button event listener
+     */
+    function setupThemeToggle() {
+        const toggleButton = document.getElementById('theme-toggle');
+        toggleButton.addEventListener('click', toggleTheme);
+    }
+    
     // ==================== DATA FETCHING ====================
     
     /**
@@ -172,7 +355,7 @@
         if (!tags || tags.length === 0) return '';
         
         return tags
-            .map(tag => `<span style="background:#eee; padding:2px 6px; border-radius:10px; font-size:10px; margin-right:4px; border:1px solid #ddd;">${tag}</span>`)
+            .map(tag => `<span class="tag-item">${tag}</span>`)
             .join('');
     }
 
@@ -208,10 +391,11 @@
         // If test is skipped, show MANUAL status instead of automated status
         const isAutomatedForDisplay = test.isSkipped ? false : test.isAutomated;
         const statusPill = generateStatusPill(isAutomatedForDisplay);
-        const skippedLabel = test.isSkipped ? '<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:9px; margin-left:6px; font-weight:bold;">SKIPPED</span>' : '';
+        const skippedLabel = test.isSkipped ? '<span class="skipped-label">SKIPPED</span>' : '';
+        const rowClass = test.isSkipped ? 'skipped-row' : '';
         
         return `
-            <tr style="${test.isSkipped ? 'opacity: 0.6; background-color: #fff3cd;' : ''}">
+            <tr class="${rowClass}">
                 <td><strong>${test.test_id}</strong>${skippedLabel}</td>
                 <td>${test.title || '-'}</td>
                 <td><span class="priority-label">${test.priority}</span></td>
@@ -282,6 +466,8 @@
                 column: parseInt(input.dataset.column),
                 value: input.value.toLowerCase()
             }));
+        initializeTheme();
+        setupThemeToggle();
             
             applyFiltersToTable(filters, tbody);
         }
@@ -332,6 +518,8 @@
      * Initialize the dashboard application
      */
     async function initializeDashboard() {
+        initializeTheme();
+        setupThemeToggle();
         await loadDashboard();
         setupColumnFilters();
     }

@@ -20,8 +20,8 @@
     - smoke
     - user
   bugId: null
-  isAutomated: false
-  type: authentication
+  isAutomated: true
+  type: profile
   automation: ui
   testFile: tests/login.spec.ts
   testName: should be login and navigate to dashboard
