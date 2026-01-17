@@ -340,6 +340,24 @@
             flex-direction: column;
             height: 320px;
             overflow: hidden;
+            position: relative;
+            resize: horizontal;
+            min-width: 320px;
+            max-width: 100%;
+        }
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            cursor: nwse-resize;
+            background: linear-gradient(135deg, transparent 50%, var(--border-color) 50%);
+            border-bottom-left-radius: 8px;
+            z-index: 10;
+        }
+        .resize-handle:hover {
+            background: linear-gradient(135deg, transparent 50%, var(--text-primary) 50%);
         }
         .chart-header {
             display: flex;
@@ -358,9 +376,7 @@
             flex: 1;
             position: relative;
             width: 100%;
-            height: 250px;
-            min-height: 250px;
-            max-height: 250px;
+            min-height: 200px;
         }
         #featureChart {
             position: absolute;
@@ -675,7 +691,8 @@
                 <p id="coverage-percent">-</p>
             </div>
         </div>
-        <div class="chart-container">
+        <div class="chart-container" id="chart-container">
+            <div class="resize-handle" id="resize-handle"></div>
             <div class="chart-header">
                 <h3>Feature Distribution & Coverage</h3>
                 <button class="chart-toggle-btn" id="chart-toggle-btn" title="Switch Chart Type">
@@ -878,6 +895,54 @@
                 localStorage.setItem('dashboardCollapsed', 'true');
             } else {
                 localStorage.setItem('dashboardCollapsed', 'false');
+            }
+        });
+    }
+    
+    /**
+     * Setup chart container resize functionality
+     */
+    function setupChartResize() {
+        const resizeHandle = document.getElementById('resize-handle');
+        const chartContainer = document.getElementById('chart-container');
+        let isResizing = false;
+        let startX, startWidth, startHeight;
+        
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = chartContainer.offsetWidth;
+            startHeight = chartContainer.offsetHeight;
+            
+            e.preventDefault();
+            document.body.style.cursor = 'nwse-resize';
+            document.body.style.userSelect = 'none';
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const deltaX = startX - e.clientX;
+            const deltaY = e.clientY - startHeight;
+            
+            const newWidth = Math.max(320, Math.min(startWidth + deltaX, window.innerWidth * 0.8));
+            const newHeight = Math.max(250, startHeight + deltaY);
+            
+            chartContainer.style.width = newWidth + 'px';
+            chartContainer.style.height = newHeight + 'px';
+            chartContainer.style.flex = `0 0 ${newWidth}px`;
+            
+            // Update chart to fit new container
+            if (featureChartInstance) {
+                featureChartInstance.resize();
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
             }
         });
     }
@@ -1878,6 +1943,7 @@
         setupDropdownFilters();
         setupChartToggle();
         setupSortHandlers();
+        setupChartResize();
     }
 
     // Start the application
