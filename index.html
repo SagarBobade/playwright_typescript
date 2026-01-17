@@ -254,18 +254,34 @@
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            height: 320px;
+            overflow: hidden;
         }
-        .chart-container h3 {
-            margin: 0 0 15px 0;
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        .chart-header h3 {
+            margin: 0;
             color: var(--text-primary);
             font-size: 16px;
-            align-self: center;
+        }
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 250px;
+            min-height: 250px;
+            max-height: 250px;
         }
         #featureChart {
-            max-width: 100%;
-            max-height: 147px;
-            align-self: flex-start;
+            position: absolute;
+            width: 100% !important;
+            height: 100% !important;
         }
         .search-result-count {
             margin-top: 10px;
@@ -278,6 +294,31 @@
             color: var(--text-primary);
             font-weight: bold;
             font-size: 16px;
+        }
+        .chart-toggle-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-primary);
+            transition: all 0.3s;
+            margin-left: auto;
+        }
+        .chart-toggle-btn:hover {
+            background: var(--bg-hover);
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .chart-header h3 {
+            margin: 0;
         }
     </style>
 </head>
@@ -317,8 +358,15 @@
             </div>
         </div>
         <div class="chart-container">
-            <h3>Feature Distribution & Coverage</h3>
-            <canvas id="featureChart"></canvas>
+            <div class="chart-header">
+                <h3>Feature Distribution & Coverage</h3>
+                <button class="chart-toggle-btn" id="chart-toggle-btn" title="Switch Chart Type">
+                    <span id="chart-type-label">Switch to Bar Chart</span>
+                </button>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="featureChart"></canvas>
+            </div>
         </div>
     </div>
     
@@ -402,6 +450,8 @@
 <script>
     // Global variable to store chart instance
     let featureChartInstance = null;
+    let currentChartType = 'pie'; // 'pie' or 'bar'
+    let storedTestsData = null; // Store tests data for chart toggling
     
     // ==================== THEME MANAGEMENT ====================
     
@@ -695,6 +745,11 @@
             }
         });
         
+        // Destroy existing chart if it exists
+        if (featureChartInstance) {
+            featureChartInstance.destroy();
+        }
+        
         // Create chart
         const ctx = document.getElementById('featureChart').getContext('2d');
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -713,7 +768,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         position: 'left',
@@ -758,6 +813,131 @@
         });
         
         console.log('Feature chart rendered with data:', featureData);
+    }
+
+    /**
+     * Render bar chart showing test distribution by feature
+     * @param {Array} tests - Array of test objects
+     */
+    function renderBarChart(tests) {
+        // Group tests by feature
+        const featureData = {};
+        
+        tests.forEach(test => {
+            const feature = test.type || 'uncategorized';
+            const isManual = test.isSkipped === true;
+            
+            if (!featureData[feature]) {
+                featureData[feature] = { automated: 0, manual: 0 };
+            }
+            
+            if (isManual) {
+                featureData[feature].manual++;
+            } else {
+                featureData[feature].automated++;
+            }
+        });
+        
+        // Prepare chart data
+        const features = Object.keys(featureData);
+        const automatedData = features.map(f => featureData[f].automated);
+        const manualData = features.map(f => featureData[f].manual);
+        
+        // Destroy existing chart if it exists
+        if (featureChartInstance) {
+            featureChartInstance.destroy();
+        }
+        
+        // Create chart
+        const ctx = document.getElementById('featureChart').getContext('2d');
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const textColor = currentTheme === 'dark' ? '#e0e0e0' : '#000000';
+        const gridColor = currentTheme === 'dark' ? '#444' : '#ddd';
+        
+        featureChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: features,
+                datasets: [
+                    {
+                        label: 'Automated',
+                        data: automatedData,
+                        backgroundColor: '#27ae60',
+                        borderColor: '#27ae60',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Manual',
+                        data: manualData,
+                        backgroundColor: '#95a5a6',
+                        borderColor: '#95a5a6',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: textColor,
+                            padding: 10,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y || 0;
+                                return `${label}: ${value} tests`;
+                            },
+                            footer: function(tooltipItems) {
+                                const feature = tooltipItems[0].label;
+                                const automated = featureData[feature].automated;
+                                const manual = featureData[feature].manual;
+                                const total = automated + manual;
+                                const coverage = total > 0 ? ((automated / total) * 100).toFixed(1) : 0;
+                                return `Total: ${total} | Coverage: ${coverage}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: {
+                            color: textColor
+                        },
+                        grid: {
+                            color: gridColor
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: {
+                            color: textColor,
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: gridColor
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Tests',
+                            color: textColor
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Bar chart rendered with data:', featureData);
     }
 
     /**
@@ -940,6 +1120,34 @@
         console.log('Column filters setup complete');
     }
 
+    /**
+     * Setup chart toggle functionality
+     */
+    function setupChartToggle() {
+        const toggleBtn = document.getElementById('chart-toggle-btn');
+        const chartLabel = document.getElementById('chart-type-label');
+        
+        toggleBtn.addEventListener('click', () => {
+            if (!storedTestsData) return;
+            
+            // Destroy existing chart
+            if (featureChartInstance) {
+                featureChartInstance.destroy();
+            }
+            
+            // Toggle chart type
+            if (currentChartType === 'pie') {
+                currentChartType = 'bar';
+                chartLabel.textContent = 'Switch to Pie Chart';
+                renderBarChart(storedTestsData);
+            } else {
+                currentChartType = 'pie';
+                chartLabel.textContent = 'Switch to Bar Chart';
+                renderFeatureChart(storedTestsData);
+            }
+        });
+    }
+
     // ==================== ERROR HANDLING ====================
     
     /**
@@ -970,6 +1178,9 @@
             renderTestTable(tests);
             renderFeatureChart(tests);
             
+            // Store tests data for chart toggling
+            storedTestsData = tests;
+            
             console.log('Dashboard loaded successfully');
         } catch (error) {
             displayError(error);
@@ -985,6 +1196,7 @@
         setupDashboardToggle();
         await loadDashboard();
         setupColumnFilters();
+        setupChartToggle();
     }
 
     // Start the application
