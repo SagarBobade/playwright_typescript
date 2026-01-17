@@ -320,6 +320,16 @@
         .dropdown-item:last-child {
             border-bottom: none;
         }
+        .dropdown-item input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        .dropdown-item label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
         .chart-container {
             flex: 0 0 480px;
             background: var(--bg-secondary);
@@ -779,6 +789,7 @@
     let currentTests = []; // Store current tests for sorting
     let currentSortColumn = null;
     let currentSortOrder = 'none';
+    let selectedDropdownValues = {}; // Store selected values for each dropdown column
     
     // ==================== THEME MANAGEMENT ====================
     
@@ -1534,7 +1545,22 @@
             
             // Check if row matches all active filters
             for (let filter of filters) {
-                if (filter.value) {
+                if (filter.values && filter.values.length > 0) {
+                    // Multi-select filter (dropdown columns)
+                    const cell = row.getElementsByTagName('td')[filter.column];
+                    if (cell) {
+                        const cellText = (cell.textContent || cell.innerText).toLowerCase();
+                        // Check if cell text contains ANY of the selected values
+                        const matchesAny = filter.values.some(value => 
+                            cellText.indexOf(value.toLowerCase()) !== -1
+                        );
+                        if (!matchesAny) {
+                            showRow = false;
+                            break;
+                        }
+                    }
+                } else if (filter.value) {
+                    // Regular text search filter
                     const cell = row.getElementsByTagName('td')[filter.column];
                     if (cell) {
                         const cellText = (cell.textContent || cell.innerText).toLowerCase();
@@ -1545,7 +1571,6 @@
                     }
                 }
             }
-        setupSortHandlers();
             
             row.style.display = showRow ? '' : 'none';
             if (showRow) visibleCount++;
@@ -1564,13 +1589,28 @@
         const searchResultCount = document.getElementById('search-result-count');
         
         function applyAllFilters() {
-            const filters = Array.from(searchInputs).map(input => ({
-                column: parseInt(input.dataset.column),
-                value: input.value.toLowerCase()
-            }));
+            const filters = Array.from(searchInputs).map(input => {
+                const columnIndex = parseInt(input.dataset.column);
+                
+                // Check if this is a dropdown column with multi-select
+                if (selectedDropdownValues[columnIndex] && selectedDropdownValues[columnIndex].length > 0) {
+                    return {
+                        column: columnIndex,
+                        values: selectedDropdownValues[columnIndex]
+                    };
+                } else {
+                    return {
+                        column: columnIndex,
+                        value: input.value.toLowerCase()
+                    };
+                }
+            });
             
             // Check if any filter has a value
-            const hasActiveFilters = filters.some(filter => filter.value.length > 0);
+            const hasActiveFilters = filters.some(filter => 
+                (filter.value && filter.value.length > 0) || 
+                (filter.values && filter.values.length > 0)
+            );
             
             // Show/hide search result count
             if (hasActiveFilters) {
@@ -1582,6 +1622,9 @@
             applyFiltersToTable(filters, tbody);
         }
         
+        // Make applyAllFilters accessible globally for dropdown filters
+        window.applyAllFilters = applyAllFilters;
+        
         searchInputs.forEach(input => {
             if (!input.classList.contains('dropdown-enabled')) {
                 input.addEventListener('keyup', applyAllFilters);
@@ -1591,6 +1634,9 @@
         console.log('Column filters setup complete');
     }
 
+    /**
+     * Populate dropdown with unique values from column
+     */
     /**
      * Populate dropdown with unique values from column
      */
@@ -1629,6 +1675,12 @@
     function setupDropdownFilters() {
         const dropdownInputs = document.querySelectorAll('.header-search.dropdown-enabled');
         
+        // Initialize selected values storage
+        dropdownInputs.forEach(input => {
+            const columnIndex = parseInt(input.dataset.column);
+            selectedDropdownValues[columnIndex] = [];
+        });
+        
         dropdownInputs.forEach(input => {
             const columnIndex = parseInt(input.dataset.column);
             const dropdown = input.parentElement.parentElement.querySelector('.search-dropdown');
@@ -1647,19 +1699,44 @@
                     const values = populateDropdown(columnIndex);
                     dropdown.innerHTML = '';
                     
-                    // Add value options (no clear option)
+                    // Add value options with checkboxes
                     values.forEach(value => {
                         const item = document.createElement('div');
                         item.className = 'dropdown-item';
-                        item.textContent = value;
-                        item.addEventListener('click', () => {
-                            input.value = value;
-                            dropdown.classList.remove('show');
-                            // Show clear icon
-                            const clearIcon = input.parentElement.querySelector('.clear-icon');
-                            if (clearIcon) clearIcon.classList.add('show');
-                            applyAllFilters();
+                        
+                        const label = document.createElement('label');
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = value;
+                        
+                        // Check if this value is already selected
+                        if (selectedDropdownValues[columnIndex].includes(value)) {
+                            checkbox.checked = true;
+                        }
+                        
+                        checkbox.addEventListener('change', (e) => {
+                            e.stopPropagation();
+                            
+                            if (checkbox.checked) {
+                                // Add to selected values
+                                if (!selectedDropdownValues[columnIndex].includes(value)) {
+                                    selectedDropdownValues[columnIndex].push(value);
+                                }
+                            } else {
+                                // Remove from selected values
+                                selectedDropdownValues[columnIndex] = selectedDropdownValues[columnIndex].filter(v => v !== value);
+                            }
+                            
+                            // Update input display
+                            updateDropdownInputDisplay(input, columnIndex);
+                            
+                            // Apply filters
+                            window.applyAllFilters();
                         });
+                        
+                        label.appendChild(checkbox);
+                        label.appendChild(document.createTextNode(value));
+                        item.appendChild(label);
                         dropdown.appendChild(item);
                     });
                     
@@ -1679,10 +1756,17 @@
                 const input = icon.parentElement.querySelector('.header-search');
                 const dropdown = icon.parentElement.parentElement.querySelector('.search-dropdown');
                 
+                // Clear selected values
+                selectedDropdownValues[columnIndex] = [];
                 input.value = '';
                 icon.classList.remove('show');
                 if (dropdown) dropdown.classList.remove('show');
-                applyAllFilters();
+                
+                // Uncheck all checkboxes in dropdown
+                const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => cb.checked = false);
+                
+                window.applyAllFilters();
             });
         });
         
@@ -1695,29 +1779,23 @@
             }
         });
         
-        // Helper function to apply all filters
-        function applyAllFilters() {
-            const searchInputs = document.querySelectorAll('.header-search');
-            const tbody = document.getElementById('test-table-body');
-            const searchResultCount = document.getElementById('search-result-count');
-            
-            const filters = Array.from(searchInputs).map(input => ({
-                column: parseInt(input.dataset.column),
-                value: input.value.toLowerCase()
-            }));
-            
-            const hasActiveFilters = filters.some(filter => filter.value.length > 0);
-            
-            if (hasActiveFilters) {
-                searchResultCount.style.display = 'block';
-            } else {
-                searchResultCount.style.display = 'none';
-            }
-            
-            applyFiltersToTable(filters, tbody);
-        }
-        
         console.log('Dropdown filters setup complete');
+    }
+    
+    /**
+     * Update dropdown input display with selected count
+     */
+    function updateDropdownInputDisplay(input, columnIndex) {
+        const selectedCount = selectedDropdownValues[columnIndex].length;
+        const clearIcon = input.parentElement.querySelector('.clear-icon');
+        
+        if (selectedCount > 0) {
+            input.value = `${selectedCount} selected`;
+            if (clearIcon) clearIcon.classList.add('show');
+        } else {
+            input.value = '';
+            if (clearIcon) clearIcon.classList.remove('show');
+        }
     }
 
     /**
