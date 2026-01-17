@@ -735,6 +735,10 @@
         ⚠️ Shadow tests detected: <span id="shadow-list"></span>
     </div>
 
+    <div id="orphaned-alert" style="display:none; background:#f39c12; color:white; padding:10px; border-radius:5px; margin-bottom:20px;">
+        ⚠️ Orphaned tests detected (in YAML but not in code): <span id="orphaned-list"></span>
+    </div>
+
     <div class="search-result-count" id="search-result-count" style="display:none;">
         Showing <span id="visible-count">0</span> of <span id="total-count">0</span> tests
     </div>
@@ -1143,18 +1147,15 @@
         
         // Color palette for features - distinct, vibrant colors for easy distinction
         const featureColors = {
-            'user': '#FF6B6B',           // Coral Red
-            'customer': '#4ECDC4',        // Turquoise
-            'admin': '#FFD93D',          // Golden Yellow
-            'authentication': '#6C5CE7',  // Purple
-            'profile': '#00B894',        // Emerald Green
-            'registration': '#FD79A8',   // Pink
-            'security': '#74B9FF',       // Sky Blue
-            'payment': '#A29BFE',        // Lavender
-            'cart': '#FDCB6E',           // Peach
-            'product': '#FF7675',        // Light Red
-            'order': '#55EFC4',          // Mint Green
-            'uncategorized': '#B2BEC3'   // Gray
+            'activity': '#FF6B6B',                    // Coral Red
+            'associated-organization': '#4ECDC4',     // Turquoise
+            'associated-people': '#FFD93D',           // Golden Yellow
+            'link': '#6C5CE7',                        // Purple
+            'notes': '#00B894',                       // Emerald Green
+            'production-plan': '#FD79A8',             // Pink
+            'resource': '#74B9FF',                    // Sky Blue
+            'task': '#FDCB6E',                        // Peach
+            'uncategorized': '#B2BEC3'                // Gray
         };
         
         // Get canvas context for creating patterns
@@ -1392,7 +1393,24 @@
     function renderShadowAlert(stats) {
         if (stats.shadowTestsCount > 0) {
             document.getElementById('shadow-alert').style.display = 'block';
-            document.getElementById('shadow-list').innerText = stats.shadowTestsList.join(', ');
+            const listHtml = '<ol style="margin:5px 0 0 20px; padding-left:0;">' + 
+                stats.shadowTestsList.map(test => `<li>${test}</li>`).join('') + 
+                '</ol>';
+            document.getElementById('shadow-list').innerHTML = listHtml;
+        }
+    }
+
+    /**
+     * Display orphaned tests alert if any exist
+     * @param {Object} stats - Statistics object with orphaned test info
+     */
+    function renderOrphanedAlert(stats) {
+        if (stats.orphanedTestsCount > 0) {
+            document.getElementById('orphaned-alert').style.display = 'block';
+            const listHtml = '<ol style="margin:5px 0 0 20px; padding-left:0;">' + 
+                stats.orphanedTestsList.map(test => `<li>${test}</li>`).join('') + 
+                '</ol>';
+            document.getElementById('orphaned-list').innerHTML = listHtml;
         }
     }
 
@@ -1944,6 +1962,7 @@
             // Render UI
             renderStatistics(stats);
             renderShadowAlert(stats);
+            renderOrphanedAlert(stats);
             currentTests = tests; // Store tests for sorting
             renderTestTable(tests);
             renderFeatureChart(tests);

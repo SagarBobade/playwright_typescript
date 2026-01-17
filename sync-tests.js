@@ -11,20 +11,20 @@ const CONFIG = {
     yamlPath: './tests.yml',        // Path to YAML manifest file containing test metadata
     testsDir: './tests',             // Directory where test spec files are located
     fileExtensions: ['.spec.ts', '.test.js', '.spec.js'], // File types to scan for test IDs
-    idRegex: /TC-\d+/g,             // Regular expression pattern to match test IDs (e.g., TC-001, TC-042)
-    testPattern: /test(?:\.skip)?\(['"](.*?)@(TC-\d+)['"]/g,  // Pattern to extract test title and ID together (including test.skip)
+    idRegex: /TC[:-]?\d+/g,             // Regular expression pattern to match test IDs (e.g., TC-001, TC:1, TC-042)
+    testPattern: /test(?:\.(?:skip|fixme))?\(['"]((?:TC[:-]?\d+[:\s-].+?)|(?:.+?@TC[:-]?\d+))['"],/g,  // Pattern to extract test title and ID together (supports TC-XXX:, TC:XXX, and @TC-XXX formats, including test.skip and test.fixme, handles quotes in title)
     jiraPattern: /@jira\s+([A-Za-z]+-\d+)/gi,  // Pattern to extract Jira IDs (e.g., @jira SHOW-1234)
     priorityPattern: /@priority\s+(P\d+)/gi,  // Pattern to extract priority (e.g., @priority P0)
-    featurePattern: /@feature\s+(\w+)/gi,  // Pattern to extract feature (e.g., @feature login)
+    featurePattern: /@feature\s+([\w-]+)/gi,  // Pattern to extract feature (e.g., @feature login, @feature associated-people)
     testTitleTagPattern: /@([\w-]+)/g,  // Pattern to extract tags from test title (e.g., @smoke @regression)
-    skipPattern: /test\.skip\(['"](.*?)@(TC-\d+)['"]/g,  // Pattern to detect skipped tests (e.g., test.skip('title @TC-001'))
+    skipPattern: /test\.(?:skip|fixme)\(['"]((?:TC[:-]?\d+[:\s-].+?)|(?:.+?@TC[:-]?\d+))['"],/g,  // Pattern to detect skipped/fixme tests (supports both formats, handles quotes in title)
     descriptionPattern: /@description\s+(.+?)(?=\n\s*\*|$)/gis,  // Pattern to extract description
     expectedResultPattern: /@expectedResult\s+(.+?)(?=\n\s*\*|$)/gis  // Pattern to extract expected result
 };
 
 /**
  * Read and parse the YAML manifest file
- * @returns {Object} Object containing manifest array and extracted test IDs
+ * @returns {Object} Object containing manifest array and extracted test IDs with composite keys
  */
 function loadYamlManifest() {
     console.log('📄 Loading YAML manifest...');
@@ -38,10 +38,11 @@ function loadYamlManifest() {
         process.exit(1);
     }
     
-    const yamlIds = manifest.map(item => item.test_id);
+    // Create composite keys: testFile::test_id for file-scoped uniqueness
+    const yamlCompositeKeys = manifest.map(item => `${item.testFile}::${item.test_id}`);
     console.log(`   ✓ Loaded ${manifest.length} tests from manifest`);
     
-    return { manifest, yamlIds };
+    return { manifest, yamlCompositeKeys };
 }
 
 /**
@@ -53,11 +54,83 @@ function extractTestMetadata(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
     const testDataMap = new Map();
     
+    const testSuites = [];
+    const suitePattern = /test\.(?:describe\.)?skip\s*\(\s*['"](.*?)['"],\s*\{[^}]*\},\s*\(\)\s*=>\s*\{/g;
+    let suiteMatch;
+    
+    while ((suiteMatch = suitePattern.exec(content)) !== null) {
+        const suiteName = suiteMatch[1];
+        const suiteStartIndex = suiteMatch.index;
+        
+        // Find the end of this suite by counting braces
+        let braceCount = 1; // Start at 1 since we're starting from the opening brace
+        let inString = false;
+        let stringChar = null;
+        let parenDepth = 0; // Track parentheses to ignore braces in function parameters
+        let suiteEndIndex = suiteStartIndex;
+        
+        // Start from the opening brace
+        const startPos = content.indexOf('{', suiteStartIndex + suiteMatch[0].length - 1);
+        
+        for (let i = startPos + 1; i < content.length; i++) {
+            const char = content[i];
+            const prevChar = i > 0 ? content[i - 1] : '';
+            
+            // Handle string literals
+            if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
+                if (!inString) {
+                    inString = true;
+                    stringChar = char;
+                } else if (char === stringChar) {
+                    inString = false;
+                    stringChar = null;
+                }
+            }
+            
+            // Track parentheses and count braces only outside strings and parentheses
+            if (!inString) {
+                if (char === '(') parenDepth++;
+                if (char === ')') parenDepth--;
+                
+                // Only count braces when not inside parentheses (to ignore parameter destructuring)
+                if (parenDepth === 0) {
+                    if (char === '{') braceCount++;
+                    if (char === '}') braceCount--;
+                    
+                    if (braceCount === 0) {
+                        suiteEndIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        testSuites.push({
+            name: suiteName,
+            startIndex: suiteStartIndex,
+            endIndex: suiteEndIndex,
+            isSkipped: true
+        });
+    }
+    
+    // Helper function to check if a position is inside a skipped test suite
+    function isInsideSkippedSuite(position) {
+        return testSuites.some(suite => 
+            position >= suite.startIndex && position <= suite.endIndex && suite.isSkipped
+        );
+    }
+    
     // Helper function to find associated test ID
     function findAssociatedTestId(position, content) {
         const searchWindow = content.substring(position, position + 500);
-        const testInWindow = searchWindow.match(/test(?:\.skip)?\(['"](.*?)@(TC-\d+)['"]/i);
-        return testInWindow ? testInWindow[2] : null;
+        // Support both formats: "TC-XXX: title", "TC:XXX title" and "title @TC-XXX"
+        const testInWindow = searchWindow.match(/test(?:\.(?:skip|fixme))?\(['"](?:(?:TC[:-]?\d+)|(?:.*?@(TC[:-]?\d+)))/i);
+        if (!testInWindow) return null;
+        // Return the test ID from either format
+        if (testInWindow[2]) return testInWindow[2]; // @TC-XXX format
+        const fullMatch = testInWindow[1] || testInWindow[0];
+        const idMatch = fullMatch.match(/TC[:-]?\d+/);
+        return idMatch ? idMatch[0] : null;
     }
     
     // Helper function to extract JSDoc comment before test
@@ -124,18 +197,26 @@ function extractTestMetadata(filePath) {
     const skipPattern = new RegExp(CONFIG.skipPattern.source, CONFIG.skipPattern.flags);
     let skipMatch;
     while ((skipMatch = skipPattern.exec(content)) !== null) {
-        const testId = skipMatch[2];
-        skippedMap.set(testId, true);
+        const fullMatch = skipMatch[1];  // The entire test title
+        const idMatch = fullMatch.match(/TC[:-]?\d+/);
+        if (idMatch) {
+            const testId = idMatch[0];
+            skippedMap.set(testId, true);
+        }
     }
     
     // Extract Tags from Playwright's tag property in test options
     // Pattern to match: test('title @TC-XXX', { tag: ['@smoke', '@auth'] }, async...
-    // Also matches test.skip('title @TC-XXX', { tag: [...] }, async...
-    const tagPropertyPattern = /test(?:\.skip)?\(['"](.*?)@(TC-\d+)['"]\s*,\s*\{[^}]*tag:\s*\[([^\]]+)\]/g;
+    // Also matches test.skip(), test.fixme() with { tag: [...] } and TC-XXX: format
+    const tagPropertyPattern = /test(?:\.(?:skip|fixme))?\(['"](?:TC[:-]?\d+[:\s-].+?|.+?@TC[:-]?\d+)['"],\s*\{[^}]*tag:\s*\[([^\]]+)\]/gs;
     let tagPropertyMatch;
     while ((tagPropertyMatch = tagPropertyPattern.exec(content)) !== null) {
-        const testId = tagPropertyMatch[2];
-        const tagsString = tagPropertyMatch[3];
+        // Extract test ID from the matched test string
+        const testString = tagPropertyMatch[0];
+        const idMatch = testString.match(/TC[:-]?\d+/);
+        if (!idMatch) continue;
+        const testId = idMatch[0];
+        const tagsString = tagPropertyMatch[1];
         
         // Extract individual tags from the array
         const tagMatches = tagsString.match(/['"]([^'"]+)['"]/g);
@@ -150,8 +231,22 @@ function extractTestMetadata(filePath) {
     let match;
     
     while ((match = pattern.exec(content)) !== null) {
-        const title = match[1].trim();
-        const testId = match[2];
+        const fullMatch = match[1];  // The entire test title (either "TC-XXX: title", "TC:XXX title" or "title @TC-XXX")
+        
+        // Extract test ID
+        const idMatch = fullMatch.match(/TC[:-]?\d+/);
+        if (!idMatch) continue;
+        const testId = idMatch[0];
+        
+        // Extract title (remove TC-XXX: or TC:XXX prefix or @TC-XXX suffix)
+        let title;
+        if (fullMatch.startsWith('TC')) {
+            // Format: "TC-XXX: title" or "TC:XXX - title"
+            title = fullMatch.replace(/^TC[:-]?\d+[:\s-]+/, '').trim();
+        } else {
+            // Format: "title @TC-XXX"
+            title = fullMatch.replace(/\s*@TC[:-]?\d+.*$/, '').trim();
+        }
         
         // Calculate line number where test was found
         const contentUpToMatch = content.substring(0, match.index);
@@ -188,15 +283,30 @@ function extractTestMetadata(filePath) {
             }
         }
         
-        // Extract JSDoc comment for this test (for description only)
-        const jsDoc = extractJSDocForTest(match.index, content);
+        // Extract description from JSDoc or single-line comments
         let description = null;
         
+        // First, try JSDoc comment
+        const jsDoc = extractJSDocForTest(match.index, content);
         if (jsDoc) {
-            // Extract description
+            // Extract description from JSDoc with @description tag
             const descMatch = jsDoc.match(/@description\s+(.+?)(?=\n\s*\*\s*@|\n\s*\*\/)/s);
             if (descMatch) {
                 description = descMatch[1].replace(/\n\s*\*\s*/g, ' ').trim();
+            }
+        }
+        
+        // If no JSDoc description found, try single-line comment before test
+        if (!description) {
+            const beforeTest = content.substring(Math.max(0, match.index - 300), match.index);
+            // Match single-line comments: // @description text, // description text, //description text
+            const singleLineDescMatch = beforeTest.match(/\/\/\s*@?description\s+(.+?)(?=\n|$)/i);
+            if (singleLineDescMatch) {
+                // Check if it's immediately before the test (with only whitespace/newlines between)
+                const afterComment = beforeTest.substring(beforeTest.lastIndexOf(singleLineDescMatch[0]) + singleLineDescMatch[0].length);
+                if (/^\s*$/.test(afterComment)) {
+                    description = singleLineDescMatch[1].trim();
+                }
             }
         }
         
@@ -205,7 +315,8 @@ function extractTestMetadata(filePath) {
         const priority = priorityMap.get(testId) || null;
         const feature = featureMap.get(testId) || null;
         const tags = tagsMap.get(testId) || null;
-        const isSkipped = skippedMap.get(testId) || false;
+        // Check if test is explicitly skipped OR inside a skipped test suite
+        const isSkipped = skippedMap.get(testId) || isInsideSkippedSuite(match.index);
         
         // Determine automation type
         const automation = isSkipped ? 'manual' : 'ui';
@@ -243,10 +354,10 @@ function extractTestMetadata(filePath) {
 /**
  * Recursively scan a directory for test files and extract test IDs and metadata
  * @param {string} dir - Directory path to scan
- * @param {Set} codeIds - Set to store found test IDs
- * @param {Map} testDataMap - Map to store test metadata
+ * @param {Set} codeCompositeKeys - Set to store found composite keys (filePath::testId)
+ * @param {Map} testDataMap - Map to store test metadata with composite keys
  */
-function scanDirectory(dir, codeIds, testDataMap) {
+function scanDirectory(dir, codeCompositeKeys, testDataMap) {
     const files = fs.readdirSync(dir);
     console.log(`📁 Scanning directory: ${dir}`);
     console.log(`   Found ${files.length} items:`, files);
@@ -258,7 +369,7 @@ function scanDirectory(dir, codeIds, testDataMap) {
 
         if (stat.isDirectory()) {
             console.log(`      ↳ Directory detected, recursing...`);
-            scanDirectory(filePath, codeIds, testDataMap);
+            scanDirectory(filePath, codeCompositeKeys, testDataMap);
         } 
         else if (CONFIG.fileExtensions.some(ext => file.endsWith(ext))) {
             console.log(`      ↳ Test file matched!`);
@@ -266,10 +377,11 @@ function scanDirectory(dir, codeIds, testDataMap) {
             // Extract detailed metadata from test file
             const fileTestData = extractTestMetadata(filePath);
             
-            // Merge into main testDataMap and add IDs to codeIds
+            // Merge into main testDataMap and add composite keys to codeCompositeKeys
             fileTestData.forEach((metadata, testId) => {
-                codeIds.add(testId);
-                testDataMap.set(testId, metadata);
+                const compositeKey = `${filePath}::${testId}`;
+                codeCompositeKeys.add(compositeKey);
+                testDataMap.set(compositeKey, metadata);
             });
             
             console.log(`      ↳ Found ${fileTestData.size} test(s) with metadata`);
@@ -281,25 +393,25 @@ function scanDirectory(dir, codeIds, testDataMap) {
 
 /**
  * Scan the codebase for test IDs and extract metadata
- * @returns {Object} Object containing codeIds (Set) and testDataMap (Map)
+ * @returns {Object} Object containing codeCompositeKeys (Set) and testDataMap (Map)
  */
 function scanCodebaseForTestMetadata() {
     console.log('🔍 Scanning codebase for Test IDs and Metadata...');
-    const codeIds = new Set();
+    const codeCompositeKeys = new Set();
     const testDataMap = new Map();
     
-    scanDirectory(CONFIG.testsDir, codeIds, testDataMap);
+    scanDirectory(CONFIG.testsDir, codeCompositeKeys, testDataMap);
     
-    console.log(`   ✓ Found ${codeIds.size} unique test IDs in code`);
+    console.log(`   ✓ Found ${codeCompositeKeys.size} unique tests in code (file-scoped)`);
     console.log(`   ✓ Extracted metadata for ${testDataMap.size} tests`);
     
-    return { codeIds, testDataMap };
+    return { codeCompositeKeys, testDataMap };
 }
 
 /**
  * Sync all test metadata from code to YAML manifest (force override)
  * @param {Array} manifest - Test manifest array
- * @param {Map} testDataMap - Map of test ID to metadata
+ * @param {Map} testDataMap - Map of composite key to metadata
  * @returns {number} Count of tests synced
  */
 function syncAllTestMetadata(manifest, testDataMap) {
@@ -307,7 +419,8 @@ function syncAllTestMetadata(manifest, testDataMap) {
     let syncCount = 0;
     
     manifest.forEach(test => {
-        const codeMetadata = testDataMap.get(test.test_id);
+        const compositeKey = `${test.testFile}::${test.test_id}`;
+        const codeMetadata = testDataMap.get(compositeKey);
         
         if (codeMetadata) {
             const updates = [];
@@ -356,7 +469,7 @@ function syncAllTestMetadata(manifest, testDataMap) {
     });
     
     console.log(`   ✓ Synced ${syncCount} test(s) with updates`);
-    console.log(`   ✓ Total tests processed: ${manifest.filter(t => testDataMap.has(t.test_id)).length}`);
+    console.log(`   ✓ Total tests processed: ${manifest.filter(t => testDataMap.has(`${t.testFile}::${t.test_id}`)).length}`);
     return syncCount;
 }
 
@@ -379,14 +492,15 @@ function areArraysEqual(arr1, arr2) {
 /**
  * Update manifest to sync isAutomated flag with actual code presence
  * @param {Array} manifest - Test manifest array
- * @param {Set} codeIds - Set of test IDs found in code
+ * @param {Set} codeCompositeKeys - Set of composite keys found in code
  */
-function syncManifestWithCode(manifest, codeIds) {
+function syncManifestWithCode(manifest, codeCompositeKeys) {
     console.log('🔄 Syncing isAutomated status with code...');
     let updateCount = 0;
     
     manifest.forEach(test => {
-        const existsInCode = codeIds.has(test.test_id);
+        const compositeKey = `${test.testFile}::${test.test_id}`;
+        const existsInCode = codeCompositeKeys.has(compositeKey);
         
         if (test.isAutomated !== existsInCode) {
             console.log(`   [STATUS UPDATE] ${test.test_id}: isAutomated changed to ${existsInCode}`);
@@ -400,20 +514,45 @@ function syncManifestWithCode(manifest, codeIds) {
 
 /**
  * Detect shadow tests (tests in code but not in manifest)
- * @param {Set} codeIds - Set of test IDs found in code
- * @param {Array} yamlIds - Array of test IDs from manifest
- * @returns {Array} Array of shadow test IDs
+ * @param {Set} codeCompositeKeys - Set of composite keys found in code
+ * @param {Array} yamlCompositeKeys - Array of composite keys from manifest
+ * @returns {Array} Array of shadow test composite keys
  */
-function detectShadowTests(codeIds, yamlIds) {
-    const missingInYaml = Array.from(codeIds).filter(id => !yamlIds.includes(id));
+function detectShadowTests(codeCompositeKeys, yamlCompositeKeys) {
+    const missingInYaml = Array.from(codeCompositeKeys).filter(key => !yamlCompositeKeys.includes(key));
     
     if (missingInYaml.length > 0) {
         console.error('\n❌ ERROR: Shadow Tests Detected!');
-        console.error('The following IDs exist in code but are NOT registered in tests.yaml:');
-        console.error(missingInYaml.join(', '));
+        console.error('The following tests exist in code but are NOT registered in tests.yaml:');
+        missingInYaml.forEach(key => {
+            const [file, id] = key.split('::');
+            console.error(`  - ${id} in ${file}`);
+        });
     }
     
     return missingInYaml;
+}
+
+/**
+ * Detect orphaned tests (tests in manifest but not in code)
+ * @param {Array} yamlCompositeKeys - Array of composite keys from manifest
+ * @param {Set} codeCompositeKeys - Set of composite keys found in code
+ * @returns {Array} Array of orphaned test composite keys
+ */
+function detectOrphanedTests(yamlCompositeKeys, codeCompositeKeys) {
+    const missingInCode = yamlCompositeKeys.filter(key => !codeCompositeKeys.has(key));
+    
+    if (missingInCode.length > 0) {
+        console.warn('\n⚠️  WARNING: Orphaned Tests Detected!');
+        console.warn('The following tests are registered in tests.yaml but do NOT exist in code:');
+        console.warn('\x1b[33m%s\x1b[0m', '(These tests may have been deleted or renamed)');
+        missingInCode.forEach(key => {
+            const [file, id] = key.split('::');
+            console.warn(`\x1b[33m  - ${id} in ${file}\x1b[0m`);
+        });
+    }
+    
+    return missingInCode;
 }
 
 /**
@@ -432,9 +571,10 @@ function saveManifestToYaml(manifest) {
  * @param {Array} manifest - Test manifest array
  * @param {Array} yamlIds - Array of test IDs from manifest
  * @param {Array} shadowTests - Array of shadow test IDs
+ * @param {Array} orphanedTests - Array of orphaned test IDs
  * @returns {Object} Statistics object
  */
-function calculateStatistics(manifest, yamlIds, shadowTests) {
+function calculateStatistics(manifest, yamlIds, shadowTests, orphanedTests) {
     const totalTests = yamlIds.length;
     // Count tests that are automated and not skipped
     const automatedCount = manifest.filter(test => test.isAutomated === true && !test.isSkipped).length;
@@ -449,6 +589,8 @@ function calculateStatistics(manifest, yamlIds, shadowTests) {
         testCoverage: `${coveragePercent}%`,
         shadowTestsCount: shadowTests.length,
         shadowTestsList: shadowTests,
+        orphanedTestsCount: orphanedTests.length,
+        orphanedTestsList: orphanedTests,
         timestamp: new Date().toISOString()
     };
 }
@@ -489,14 +631,19 @@ function saveStatistics(stats) {
 /**
  * Display final results and exit if needed
  * @param {Object} stats - Statistics object
- * @param {boolean} hasError - Whether shadow tests were detected
+ * @param {boolean} hasShadowTests - Whether shadow tests were detected
+ * @param {boolean} hasOrphanedTests - Whether orphaned tests were detected
  */
-function displayResultsAndExit(stats, hasError) {
+function displayResultsAndExit(stats, hasShadowTests, hasOrphanedTests) {
     console.log('\n✅ Sync Complete!');
     console.table(stats);
     
-    if (hasError) {
-        console.error('\nAction Required: Please register the shadow tests in tests.yaml.');
+    if (hasOrphanedTests) {
+        console.warn('\n⚠️  Note: Orphaned tests found. Consider removing them from tests.yaml or updating the test files.');
+    }
+    
+    if (hasShadowTests) {
+        console.error('\n❌ Action Required: Please register the shadow tests in tests.yaml.');
         process.exit(1); // Fails the CI Build
     }
 }
@@ -508,29 +655,33 @@ function main() {
     console.log('🚀 Starting Test Manifest Sync...\n');
     
     // 1. Load YAML manifest
-    const { manifest, yamlIds } = loadYamlManifest();
+    const { manifest, yamlCompositeKeys } = loadYamlManifest();
     
     // 2. Scan codebase for test IDs and extract metadata
-    const { codeIds, testDataMap } = scanCodebaseForTestMetadata();
+    const { codeCompositeKeys, testDataMap } = scanCodebaseForTestMetadata();
     
     // 3. Sync automation status (isAutomated flag)
-    syncManifestWithCode(manifest, codeIds);
+    syncManifestWithCode(manifest, codeCompositeKeys);
     
     // 4. Sync ALL test metadata from code to YAML (force override)
     syncAllTestMetadata(manifest, testDataMap);
     
-    // 5. Detect shadow tests
-    const shadowTests = detectShadowTests(codeIds, yamlIds);
+    // 5. Detect shadow tests (in code but not in manifest)
+    const shadowTests = detectShadowTests(codeCompositeKeys, yamlCompositeKeys);
     
-    // 6. Save updated manifest
+    // 6. Detect orphaned tests (in manifest but not in code)
+    const orphanedTests = detectOrphanedTests(yamlCompositeKeys, codeCompositeKeys);
+    
+    // 7. Save updated manifest
     saveManifestToYaml(manifest);
     
-    // 7. Calculate and save statistics
-    const stats = calculateStatistics(manifest, yamlIds, shadowTests);
+    // 8. Calculate and save statistics
+    const yamlIds = manifest.map(item => item.test_id);
+    const stats = calculateStatistics(manifest, yamlIds, shadowTests, orphanedTests);
     saveStatistics(stats);
     
-    // 8. Display results and exit if needed
-    displayResultsAndExit(stats, shadowTests.length > 0);
+    // 9. Display results and exit if needed
+    displayResultsAndExit(stats, shadowTests.length > 0, orphanedTests.length > 0);
 }
 
 // Execute main function

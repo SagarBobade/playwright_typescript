@@ -1,91 +1,1035 @@
-- test_id: TC-001
-  title: Verify Invalid Login Shows Error Message
-  priority: P0
+- test_id: TC-1
+  title: Able to create a Resource for an existing production plan.
+  priority: null
   tags:
-    - regression
-    - auth
-    - security
-  bugId: SHOP-1234
+    - planningApp
+    - sanity
+    - workspace
+    - resource
+  bugId: null
   isAutomated: true
-  type: user
+  type: resource
   automation: ui
-  testFile: tests/endUser/login.spec.ts
-  testName: Verify Invalid Login Shows Error Message
-  description: Verifies that the e-commerce platform prevents unauthorized access
-    when users attempt to login with incorrect credentials and displays
-    appropriate error messages
+  testFile: tests/workspace/resource/production-plan-resource.spec.ts
+  testName: Able to create a Resource for an existing production plan.
+  description: null
   expectedResult: null
   isSkipped: false
-- test_id: TC-002
-  title: Verify Customer Can Access Profile After Login
-  priority: P1
+- test_id: TC-2
+  title: Able to edit the recently added Production Resource.
+  priority: null
   tags:
-    - smoke
-    - profile
-    - user-management
-  bugId: SHOP-1567
+    - planningApp
+    - sanity
+    - workspace
+    - resource
+  bugId: null
   isAutomated: true
-  type: customer
-  automation: manual
-  testFile: tests/endUser/login.spec.ts
-  testName: Verify Customer Can Access Profile After Login
-  description: Validates that logged-in customers can access their profile page to
-    view and edit personal information, order history, and saved addresses
-  expectedResult: expect(loginPage.page).toHaveTitle(/My Profile - ShopEase/)
-  isSkipped: true
-- test_id: TC-003
-  title: Verify Successful Login Redirects To Shopping Dashboard
-  priority: P0
-  tags:
-    - smoke
-    - auth
-    - critical
-  bugId: SHOP-1890
-  isAutomated: true
-  type: user
+  type: resource
   automation: ui
-  testFile: tests/endUser/login.spec.ts
-  testName: Verify Successful Login Redirects To Shopping Dashboard
-  description: Verifies that customers with valid credentials can successfully
-    login to the e-commerce platform and are redirected to the main shopping
-    dashboard with personalized recommendations
-  expectedResult: expect(loginPage.page).toHaveTitle(/ShopEase - Online Shopping/)
+  testFile: tests/workspace/resource/production-plan-resource.spec.ts
+  testName: Able to edit the recently added Production Resource.
+  description: null
+  expectedResult: null
   isSkipped: false
-- test_id: TC-004
-  title: Verify Admin Login And Dashboard Access
-  priority: P0
+- test_id: TC-3
+  title: Able to filter Resources using icons.
+  priority: null
   tags:
-    - smoke
-    - admin
-    - critical
+    - planningApp
+    - sanity
+    - workspace
+    - resource
+  bugId: null
+  isAutomated: true
+  type: resource
+  automation: manual
+  testFile: tests/workspace/resource/production-plan-resource.spec.ts
+  testName: Able to filter Resources using icons.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-4
+  title: Able to delete recently edited Production Resource
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - resource
+  bugId: null
+  isAutomated: true
+  type: resource
+  automation: ui
+  testFile: tests/workspace/resource/production-plan-resource.spec.ts
+  testName: Able to delete recently edited Production Resource
+  description: null
+  expectedResult: expect(record, "Resource of a Production plan should be
+    deleted").toBeLessThan(1)
+  isSkipped: false
+- test_id: TC-5
+  title: Able to create a Resource using a template for an existing production plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - resource
+  bugId: null
+  isAutomated: true
+  type: resource
+  automation: manual
+  testFile: tests/workspace/resource/production-plan-resource.spec.ts
+  testName: Able to create a Resource using a template for an existing production plan.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-6
+  title: Able to mark the created Task as Done.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - task
+  bugId: null
+  isAutomated: true
+  type: task
+  automation: manual
+  testFile: tests/workspace/production-plan-task.spec.ts
+  testName: Able to mark the created Task as Done.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-7
+  title: Able to change the Task status to In-Progress.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - task
+  bugId: null
+  isAutomated: true
+  type: task
+  automation: manual
+  testFile: tests/workspace/production-plan-task.spec.ts
+  testName: Able to change the Task status to In-Progress.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-8
+  title: Able to delete the recently edited Task.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - task
+  bugId: null
+  isAutomated: true
+  type: task
+  automation: manual
+  testFile: tests/workspace/production-plan-task.spec.ts
+  testName: Able to delete the recently edited Task.
+  description: null
+  expectedResult: expect(record, "Task of a Production plan should be deleted").toBeLessThan(1)
+  isSkipped: true
+- test_id: TC-1
+  title: Able to create a new Activity for the Production plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/activity-management.spec.ts
+  testName: Able to create a new Activity for the Production plan
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-2
+  title: Able to edit the newly created Activity of the Production plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/activity-management.spec.ts
+  testName: Able to edit the newly created Activity of the Production plan
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-3
+  title: Able to delete newly created Activity of a Production plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/activity-management.spec.ts
+  testName: Able to delete newly created Activity of a Production plan
+  description: null
+  expectedResult: expect(record, "Activity of a Production plan should be
+    deleted").toBeLessThan(1)
+  isSkipped: false
+- test_id: TC-1
+  title: Able to add a new activity from key date for the production plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/key-date-management.spec.ts
+  testName: Able to add a new activity from key date for the production plan.
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-2
+  title: Able to verify that a newly added activity linked to a key date is
+    displayed correctly in the activity list of the Production Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/key-date-management.spec.ts
+  testName: Able to verify that a newly added activity linked to a key date is
+    displayed correctly in the activity list of the Production Plan.
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-3
+  title: Able to add an existing activity as a key date for the production plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/key-date-management.spec.ts
+  testName: Able to add an existing activity as a key date for the production plan.
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-4
+  title: Able to remove a key date of the Production plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/key-date-management.spec.ts
+  testName: Able to remove a key date of the Production plan.
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-5
+  title: Able to see the removed key date in the schedule list screen.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - regression
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/key-date-management.spec.ts
+  testName: Able to see the removed key date in the schedule list screen.
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-1
+  title: Able to add two associated people to a Production plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedPeople
+  bugId: null
+  isAutomated: true
+  type: associated-people
+  automation: manual
+  testFile: tests/workspace/associated-people/associated-people-management.spec.ts
+  testName: Able to add two associated people to a Production plan
+  description: null
+  expectedResult: expect(record, "Associated Person of a Production should be
+    deleted").toBeLessThan(1)
+  isSkipped: true
+- test_id: TC-2
+  title: Able to change associated people of the Production plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedPeople
+  bugId: null
+  isAutomated: true
+  type: associated-people
+  automation: manual
+  testFile: tests/workspace/associated-people/associated-people-management.spec.ts
+  testName: Able to change associated people of the Production plan
+  description: null
+  expectedResult: expect(record, "Associated Person of a Production should be
+    deleted").toBeLessThan(1)
+  isSkipped: true
+- test_id: TC-3
+  title: Able to delete associated people of the Production plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedPeople
+  bugId: null
+  isAutomated: true
+  type: associated-people
+  automation: manual
+  testFile: tests/workspace/associated-people/associated-people-management.spec.ts
+  testName: Able to delete associated people of the Production plan
+  description: null
+  expectedResult: expect(record, "Associated Person of a Production should be
+    deleted").toBeLessThan(1)
+  isSkipped: true
+- test_id: TC-1
+  title: Able to add existing people as Key people to the Production plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedPeople
+  bugId: null
+  isAutomated: true
+  type: associated-people
+  automation: ui
+  testFile: tests/workspace/associated-people/key-people-assignment.spec.ts
+  testName: Able to add existing people as Key people to the Production plan
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-2
+  title: Able to see added existing person as a key person is displayed in
+    associated people list of the Production plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedPeople
+  bugId: null
+  isAutomated: true
+  type: associated-people
+  automation: ui
+  testFile: tests/workspace/associated-people/key-people-assignment.spec.ts
+  testName: Able to see added existing person as a key person is displayed in
+    associated people list of the Production plan
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-3
+  title: Able to remove person from a Key person of the Production plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedPeople
+  bugId: null
+  isAutomated: true
+  type: associated-people
+  automation: ui
+  testFile: tests/workspace/associated-people/key-people-assignment.spec.ts
+  testName: Able to remove person from a Key person of the Production plan.
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-4
+  title: Able to see removed key person in the associated people list of the
+    Production plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - regression
+    - associatedPeople
+  bugId: null
+  isAutomated: true
+  type: associated-people
+  automation: ui
+  testFile: tests/workspace/associated-people/key-people-assignment.spec.ts
+  testName: Able to see removed key person in the associated people list of the
+    Production plan.
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC-1
+  title: Able to add a non-existing Provider's link by selecting a provider from
+    dropdown.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - link
+  bugId: null
+  isAutomated: true
+  type: link
+  automation: ui
+  testFile: tests/workspace/links/different-provider-and-cleanup/different-provider.spec.ts
+  testName: Able to add a non-existing Provider's link by selecting a provider
+    from dropdown.
+  description: null
+  expectedResult: expect(isLinkPresent, "Link to the Production Plan should be
+    created.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-1
+  title: Able to add a link to the Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - link
+  bugId: null
+  isAutomated: true
+  type: link
+  automation: ui
+  testFile: tests/workspace/links/link-management/production-link-management.spec.ts
+  testName: Able to add a link to the Plan.
+  description: null
+  expectedResult: expect(isLinkPresent, "Link to the Production Plan should be
+    created.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-2
+  title: Able to edit the added link of the existing Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - link
+  bugId: null
+  isAutomated: true
+  type: link
+  automation: ui
+  testFile: tests/workspace/links/link-management/production-link-management.spec.ts
+  testName: Able to edit the added link of the existing Plan.
+  description: null
+  expectedResult: expect(isLinkPresent, "Link to the Production Plan should be
+    edited.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-3
+  title: Able to delete the edited link of the existing Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - link
+  bugId: null
+  isAutomated: true
+  type: link
+  automation: ui
+  testFile: tests/workspace/links/link-management/production-link-management.spec.ts
+  testName: Able to delete the edited link of the existing Plan.
+  description: null
+  expectedResult: expect(isLinkPresent, "Link to the Production Plan should be
+    deleted.").toBeFalsy()
+  isSkipped: false
+- test_id: TC-1
+  title: Able to add a note to the Production Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - notes
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/notes/production-plan-notes.spec.ts
+  testName: Able to add a note to the Production Plan.
+  description: null
+  expectedResult: expect(isNotePresent, "New note should be added a Production
+    plan.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-2
+  title: Able to edit recently added note of the Production Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - notes
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/notes/production-plan-notes.spec.ts
+  testName: Able to edit recently added note of the Production Plan.
+  description: null
+  expectedResult: expect(isNotePresent, "Edited Production plan note should be
+    displayed in person notes section.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-3
+  title: Able to delete note of the Production Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - notes
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/notes/production-plan-notes.spec.ts
+  testName: Able to delete note of the Production Plan.
+  description: null
+  expectedResult: expect(isNotePresent, "Deleted note should NOT be displayed in
+    Production plan note section.").toBeFalsy()
+  isSkipped: false
+- test_id: TC-1
+  title: Able to create a status note to a Production.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - notes
+    - statusNote
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/notes/production-plan-status-notes.spec.ts
+  testName: Able to create a status note to a Production.
+  description: null
+  expectedResult: expect(isNotePresent, "Status Note should be added a Production
+    plan.").toBeTruthy(); expect(createdBy, "Status note should show correct
+    created by user.").toEqual(users.ProductionPlanner.name)
+  isSkipped: false
+- test_id: TC-2
+  title: Able to edit recently added status note by another person.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - notes
+    - statusNote
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/notes/production-plan-status-notes.spec.ts
+  testName: Able to edit recently added status note by another person.
+  description: null
+  expectedResult: expect(isNotePresent, "Edited status note should be displayed in
+    Production plan note section.").toBeTruthy(); expect(createdBy, "Status note
+    should show correct updated by
+    user.").toEqual(users.ProductionPlanner2.name)
+  isSkipped: false
+- test_id: TC-3
+  title: Able to mark existing note as status note.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - notes
+    - statusNote
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/notes/production-plan-status-notes.spec.ts
+  testName: Able to mark existing note as status note.
+  description: null
+  expectedResult: expect(isUserLoggedIn, "Planner User should be able to login
+    successfully.").toBeTruthy(); expect(isNotePresent, "Status Note should be
+    updated with an existing note.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-4
+  title: Able to delete the status note.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - notes
+    - statusNote
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/notes/production-plan-status-notes.spec.ts
+  testName: Able to delete the status note.
+  description: null
+  expectedResult: expect(isNotePresent, "Deleted status note should NOT be
+    displayed.").toBeFalsy()
+  isSkipped: false
+- test_id: TC-1
+  title: Able to add an existing associated organization to the Production Plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedOrganization
+  bugId: null
+  isAutomated: true
+  type: associated-organization
+  automation: manual
+  testFile: tests/workspace/production-plan-associated-organization.spec.ts
+  testName: Able to add an existing associated organization to the Production Plan
+  description: null
+  expectedResult: expect(record, "Associated organization of a Production plan
+    should be deleted").toBeLessThan(1)
+  isSkipped: true
+- test_id: TC-2
+  title: Able to edit associated organization of the Production Plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedOrganization
+  bugId: null
+  isAutomated: true
+  type: associated-organization
+  automation: manual
+  testFile: tests/workspace/production-plan-associated-organization.spec.ts
+  testName: Able to edit associated organization of the Production Plan
+  description: null
+  expectedResult: expect(record, "Associated organization of a Production plan
+    should be deleted").toBeLessThan(1)
+  isSkipped: true
+- test_id: TC-3
+  title: Able to delete associated organization of the Production Plan
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - associatedOrganization
+  bugId: null
+  isAutomated: true
+  type: associated-organization
+  automation: manual
+  testFile: tests/workspace/production-plan-associated-organization.spec.ts
+  testName: Able to delete associated organization of the Production Plan
+  description: null
+  expectedResult: expect(record, "Associated organization of a Production plan
+    should be deleted").toBeLessThan(1)
+  isSkipped: true
+- test_id: TC-1
+  title: Able to create a Task of type 'Task' to the Production Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - task
+  bugId: null
+  isAutomated: true
+  type: task
+  automation: manual
+  testFile: tests/workspace/production-plan-task.spec.ts
+  testName: Able to create a Task of type 'Task' to the Production Plan.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-2
+  title: Able to create a Task of type 'Milestone' to the Production plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - task
+  bugId: null
+  isAutomated: true
+  type: task
+  automation: manual
+  testFile: tests/workspace/production-plan-task.spec.ts
+  testName: Able to create a Task of type 'Milestone' to the Production plan.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-3
+  title: Able to edit the recently created Task.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - task
+  bugId: null
+  isAutomated: true
+  type: task
+  automation: manual
+  testFile: tests/workspace/production-plan-task.spec.ts
+  testName: Able to edit the recently created Task.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-4
+  title: Able to edit the recently created Milestone.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - task
+  bugId: null
+  isAutomated: true
+  type: task
+  automation: manual
+  testFile: tests/workspace/production-plan-task.spec.ts
+  testName: Able to edit the recently created Milestone.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-5
+  title: Able to filter Tasks based on the Status.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - task
+  bugId: null
+  isAutomated: true
+  type: task
+  automation: manual
+  testFile: tests/workspace/production-plan-task.spec.ts
+  testName: Able to filter Tasks based on the Status.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-1
+  title: Able to create a new Production Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - plan
   bugId: SHOP-2456
   isAutomated: true
-  type: admin
+  type: production-plan
   automation: ui
-  testFile: tests/Admin/login.spec.ts
-  testName: Verify Admin Login And Dashboard Access
-  description: Verifies that admin users can successfully authenticate and access
-    the admin dashboard with full inventory management, order processing, and
-    analytics capabilities
-  expectedResult: expect(page).toHaveURL(/admin\/dashboard/);
-    expect(page).toHaveTitle(/Admin Dashboard - ShopEase/)
+  testFile: tests/workspace/production-plan.spec.ts
+  testName: Able to create a new Production Plan.
+  description: Dummy description for reference
+  expectedResult: expect(isProductionPlanPresent, "Production plan should be
+    created").toBeTruthy()
   isSkipped: false
-- test_id: TC-005
-  title: Verify Admin Logout Terminates Session Securely
-  priority: P1
+- test_id: TC-2
+  title: Able to edit the newly created Production Plan.
+  priority: null
   tags:
-    - regression
-    - admin
-    - security
-  bugId: SHOP-2789
+    - planningApp
+    - sanity
+    - workspace
+    - plan
+  bugId: null
   isAutomated: true
-  type: admin
+  type: production-plan
+  automation: ui
+  testFile: tests/workspace/production-plan.spec.ts
+  testName: Able to edit the newly created Production Plan.
+  description: null
+  expectedResult: expect(isProductionPlanPresent, "Production plan should be
+    edited").toBeTruthy()
+  isSkipped: false
+- test_id: TC-3
+  title: Able to filter plans using 'Project Status'.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - plan
+  bugId: null
+  isAutomated: true
+  type: production-plan
+  automation: ui
+  testFile: tests/workspace/production-plan.spec.ts
+  testName: Able to filter plans using 'Project Status'.
+  description: null
+  expectedResult: expect(isProductionPlanPresent, "Production plan should be
+    edited").toBeTruthy()
+  isSkipped: false
+- test_id: TC-4
+  title: Able to delete recently edited Production Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - plan
+  bugId: null
+  isAutomated: true
+  type: production-plan
+  automation: ui
+  testFile: tests/workspace/production-plan.spec.ts
+  testName: Able to delete recently edited Production Plan.
+  description: null
+  expectedResult: expect(isProductionPlanPresent, "Production plan should be
+    deleted").toBeFalsy()
+  isSkipped: false
+- test_id: TC-1
+  title: Able to add a note to the Resource.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - resource
+    - notes
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/resource/notes/production-plan-resource-notes.spec.ts
+  testName: Able to add a note to the Resource.
+  description: null
+  expectedResult: expect(isNotePresent, "New note should be added to a resource.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-2
+  title: Able to edit recently added note of the Resource.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - resource
+    - notes
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/resource/notes/production-plan-resource-notes.spec.ts
+  testName: Able to edit recently added note of the Resource.
+  description: null
+  expectedResult: expect(isNotePresent, "Resource note should be edited.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-3
+  title: Able to delete note of the Resource.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - resource
+    - notes
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/resource/notes/production-plan-resource-notes.spec.ts
+  testName: Able to delete note of the Resource.
+  description: null
+  expectedResult: expect(isNotePresent, "Deleted note should NOT be displayed in
+    resource note section.").toBeFalsy()
+  isSkipped: false
+- test_id: TC-4
+  title: Able to add default note to the Resource.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - resource
+    - notes
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/resource/notes/production-plan-resource-notes.spec.ts
+  testName: Able to add default note to the Resource.
+  description: null
+  expectedResult: expect(isNotePresent, "Default Resource note should be
+    created.").toBeTruthy()
+  isSkipped: false
+- test_id: TC-5
+  title: Able to edit default note of the Resource.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - resource
+    - notes
+  bugId: null
+  isAutomated: true
+  type: notes
+  automation: ui
+  testFile: tests/workspace/resource/notes/production-plan-resource-notes.spec.ts
+  testName: Able to edit default note of the Resource.
+  description: null
+  expectedResult: expect(isNotePresent, "Default Resource note should be edited.").toBeTruthy()
+  isSkipped: false
+- test_id: TC:1
+  title: Should be able to import schedules in Workspace using a CSV file
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - plan
+    - activity
+  bugId: null
+  isAutomated: true
+  type: activity
+  automation: ui
+  testFile: tests/workspace/activity/import-production-plan-schedules.spec.ts
+  testName: Should be able to import schedules in Workspace using a CSV file
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC:1
+  title: Should be able to import associated people from a CSV file
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - plan
+    - associatedPeople
+  bugId: null
+  isAutomated: true
+  type: associated-people
+  automation: ui
+  testFile: tests/workspace/associated-people/import-associated-people.spec.ts
+  testName: Should be able to import associated people from a CSV file
+  description: null
+  expectedResult: null
+  isSkipped: false
+- test_id: TC:1
+  title: Should be able to import 2 Productions in the Workspace
+  priority: null
+  tags:
+    - test
+    - planningApp
+    - sanity
+    - workspace
+    - plan
+  bugId: null
+  isAutomated: true
+  type: production-plan
+  automation: ui
+  testFile: tests/workspace/import-workspace.spec.ts
+  testName: Should be able to import 2 Productions in the Workspace
+  description: null
+  expectedResult: expect(isProductionTitlePresent, "Production should be
+    searched").toBeTruthy(); expect(importedProduction.title, 'Title
+    matches').toEqual(expected.title); expect(importedProduction.aka, 'AKA
+    matches').toEqual(expected.aka); expect(importedProduction.productionType,
+    'Production type matches').toEqual(expected.productionType);
+    expect(importedProduction.subType, 'Sub Type
+    matches').toEqual(expected.subType); expect(importedProduction.genre[0],
+    'Genre matches').toEqual(expected.genre[0]);
+    expect(importedProduction.summary, 'Summary
+    matches').toEqual(expected.summary);
+    expect(importedProduction.productionStatus, 'Production status
+    matches').toEqual(expected.productionStatus);
+    expect(importedProduction.projectStatus, 'Project status
+    matches').toEqual(expected.projectStatus);
+    expect(importedProduction.projectOwner, 'Project owner
+    matches').toEqual(expected.projectOwner.split(',').slice(0, 2).map(s =>
+    s.trim()).join(' ')); expect(importedProduction.statusNote, 'Status note
+    matches').toEqual(expected.statusNote); expect(importedProduction.runtime,
+    'Runtime matches').toEqual(expected.runtime);
+    expect(importedProduction.productionYears, 'Production years
+    matches').toEqual(expected.productionYears);
+    expect(importedProduction.releaseDate, 'Release date
+    matches').toBe(expected.releaseDate);
+    expect(importedProduction.seasonNumber, 'Season number
+    matches').toEqual(expected.seasonNumber);
+    expect(importedProduction.numberOfEpisodes, 'Number of episodes
+    matches').toEqual(expected.numberOfEpisodes);
+    expect(importedProduction.episodeNumber, 'Episode number
+    matches').toEqual(expected.episodeNumber)
+  isSkipped: false
+- test_id: TC-1
+  title: Able to open the added link of the Plan.
+  priority: null
+  tags:
+    - planningApp
+    - sanity
+    - workspace
+    - link
+  bugId: null
+  isAutomated: true
+  type: link
   automation: manual
-  testFile: tests/Admin/login.spec.ts
-  testName: Verify Admin Logout Terminates Session Securely
-  description: Validates that admin users can securely logout from the admin
-    panel, session is terminated properly, and attempting to access admin pages
-    redirects to login screen
-  expectedResult: expect(page).toHaveURL(/admin\/dashboard/);
-    expect(page).toHaveURL(/auth\/login/); expect(page).toHaveURL(/auth\/login/)
+  testFile: tests/workspace/links/visit-link/visit-link.spec.ts
+  testName: Able to open the added link of the Plan.
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-1
+  title: Should be able to view Production Resource details in List View
+  priority: null
+  tags: null
+  bugId: null
+  isAutomated: true
+  type: resource
+  automation: manual
+  testFile: tests/workspace/resource/Production-plan-resource-other-views.spec.ts
+  testName: Should be able to view Production Resource details in List View
+  description: null
+  expectedResult: null
+  isSkipped: true
+- test_id: TC-2
+  title: Should be able to view Production Resource details in Gallery View
+  priority: null
+  tags: null
+  bugId: null
+  isAutomated: true
+  type: resource
+  automation: manual
+  testFile: tests/workspace/resource/Production-plan-resource-other-views.spec.ts
+  testName: Should be able to view Production Resource details in Gallery View
+  description: null
+  expectedResult: null
   isSkipped: true

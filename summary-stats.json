@@ -1,9 +1,11 @@
 {
-  "totalManifested": 5,
-  "automated": 3,
-  "manual": 2,
-  "testCoverage": "60.00%",
+  "totalManifested": 57,
+  "automated": 38,
+  "manual": 19,
+  "testCoverage": "66.67%",
   "shadowTestsCount": 0,
   "shadowTestsList": [],
-  "timestamp": "2026-01-17T12:51:03.138Z"
+  "orphanedTestsCount": 0,
+  "orphanedTestsList": [],
+  "timestamp": "2026-01-17T19:15:03.993Z"
 }
