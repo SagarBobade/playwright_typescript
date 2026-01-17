@@ -494,10 +494,26 @@
         const themeIcon = document.getElementById('theme-icon');
         themeIcon.textContent = '🐞';
         
-        // Update chart legend color if chart exists
+        // Update chart colors if chart exists
         if (featureChartInstance) {
             const textColor = theme === 'dark' ? '#e0e0e0' : '#000000';
+            const gridColor = theme === 'dark' ? '#444' : '#ddd';
+            
+            // Update legend colors
             featureChartInstance.options.plugins.legend.labels.color = textColor;
+            
+            // Update scales colors for bar chart
+            if (currentChartType === 'bar') {
+                if (featureChartInstance.options.scales.x) {
+                    featureChartInstance.options.scales.x.ticks.color = textColor;
+                    featureChartInstance.options.scales.x.grid.color = gridColor;
+                }
+                if (featureChartInstance.options.scales.y) {
+                    featureChartInstance.options.scales.y.ticks.color = textColor;
+                    featureChartInstance.options.scales.y.grid.color = gridColor;
+                }
+            }
+            
             featureChartInstance.update();
         }
     }
