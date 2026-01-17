@@ -334,6 +334,240 @@
         .chart-header h3 {
             margin: 0;
         }
+        
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            body {
+                margin: 10px;
+            }
+            
+            .header-container {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .header-left h1 {
+                font-size: 24px;
+            }
+            
+            .header-container > div:last-child {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .last-sync-time {
+                margin-left: 0;
+                margin-right: 0;
+                font-size: 12px;
+                order: 3;
+                width: 100%;
+            }
+            
+            .dashboard-toggle {
+                margin-right: 0;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            
+            .theme-toggle {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            
+            .dashboard-top {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            #stats {
+                flex-direction: column;
+                gap: 10px;
+                width: 100%;
+            }
+            
+            .stat-card {
+                padding: 12px;
+                font-size: 14px;
+            }
+            
+            .stat-card h3 {
+                font-size: 16px;
+            }
+            
+            .stat-card p {
+                font-size: 20px;
+            }
+            
+            .chart-container {
+                flex: 1;
+                width: 100%;
+                height: auto;
+                min-height: 280px;
+                padding: 10px;
+            }
+            
+            .chart-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .chart-header h3 {
+                font-size: 14px;
+            }
+            
+            .chart-toggle-btn {
+                width: 100%;
+                margin-left: 0;
+                text-align: center;
+            }
+            
+            .chart-wrapper {
+                height: 200px;
+                min-height: 200px;
+                max-height: 200px;
+            }
+            
+            .search-result-count {
+                font-size: 12px;
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+            
+            .search-result-count span {
+                font-size: 14px;
+            }
+            
+            /* Table mobile responsiveness */
+            table {
+                font-size: 12px;
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            thead, tbody, tr {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+                font-size: 11px;
+            }
+            
+            .header-search {
+                font-size: 10px;
+                padding: 4px;
+            }
+            
+            .status-pill {
+                font-size: 9px;
+                padding: 3px 8px;
+            }
+            
+            .tag-item {
+                font-size: 9px;
+                padding: 2px 5px;
+                margin-right: 3px;
+            }
+            
+            .skipped-label {
+                font-size: 8px;
+                padding: 2px 5px;
+                margin-left: 4px;
+            }
+            
+            .priority-label {
+                font-size: 11px;
+            }
+            
+            .sort-icon {
+                font-size: 9px;
+                margin-left: 3px;
+            }
+            
+            .header-label {
+                font-size: 11px;
+            }
+            
+            /* Make table scrollable with min widths */
+            table th:nth-child(1), 
+            table td:nth-child(1) { min-width: 80px; }
+            
+            table th:nth-child(2), 
+            table td:nth-child(2) { min-width: 150px; }
+            
+            table th:nth-child(3), 
+            table td:nth-child(3) { min-width: 60px; }
+            
+            table th:nth-child(4), 
+            table td:nth-child(4) { min-width: 100px; }
+            
+            table th:nth-child(5), 
+            table td:nth-child(5) { min-width: 80px; }
+            
+            table th:nth-child(6), 
+            table td:nth-child(6) { min-width: 100px; }
+            
+            table th:nth-child(8), 
+            table td:nth-child(8) { min-width: 150px; }
+            
+            table th:nth-child(9), 
+            table td:nth-child(9) { min-width: 150px; }
+            
+            table th:nth-child(10), 
+            table td:nth-child(10) { min-width: 90px; }
+        }
+        
+        @media screen and (max-width: 480px) {
+            body {
+                margin: 5px;
+            }
+            
+            .header-left h1 {
+                font-size: 20px;
+            }
+            
+            .stat-card {
+                padding: 10px;
+            }
+            
+            .stat-card h3 {
+                font-size: 14px;
+            }
+            
+            .stat-card p {
+                font-size: 18px;
+            }
+            
+            .chart-container {
+                padding: 8px;
+                min-height: 250px;
+            }
+            
+            .chart-wrapper {
+                height: 180px;
+                min-height: 180px;
+                max-height: 180px;
+            }
+            
+            table {
+                font-size: 10px;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+                font-size: 10px;
+            }
+        }
     </style>
 </head>
 <body>
