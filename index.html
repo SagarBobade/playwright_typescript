@@ -400,6 +400,9 @@
     </table>
 
 <script>
+    // Global variable to store chart instance
+    let featureChartInstance = null;
+    
     // ==================== THEME MANAGEMENT ====================
     
     /**
@@ -423,6 +426,13 @@
         
         const themeIcon = document.getElementById('theme-icon');
         themeIcon.textContent = '🐞';
+        
+        // Update chart legend color if chart exists
+        if (featureChartInstance) {
+            const textColor = theme === 'dark' ? '#e0e0e0' : '#000000';
+            featureChartInstance.options.plugins.legend.labels.color = textColor;
+            featureChartInstance.update();
+        }
     }
     
     /**
@@ -687,7 +697,10 @@
         
         // Create chart
         const ctx = document.getElementById('featureChart').getContext('2d');
-        new Chart(ctx, {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const textColor = currentTheme === 'dark' ? '#e0e0e0' : '#000000';
+        
+        featureChartInstance = new Chart(ctx, {
             type: 'pie',
             data: {
                 labels: labels,
@@ -706,8 +719,7 @@
                         position: 'left',
                         align: 'start',
                         labels: {
-                            color: getComputedStyle(document.documentElement)
-                                .getPropertyValue('--text-primary').trim(),
+                            color: textColor,
                             padding: 8,
                             font: {
                                 size: 11
