@@ -246,6 +246,20 @@
             z-index: 1001;
             margin-bottom: 2px;
         }
+        .sort-icon {
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 5px;
+            color: #888;
+            user-select: none;
+        }
+        .sort-icon:hover {
+            color: var(--text-primary);
+        }
+        .sort-icon.active {
+            color: var(--text-primary);
+            font-weight: bold;
+        }
         .chart-container {
             flex: 0 0 480px;
             background: var(--bg-secondary);
@@ -395,7 +409,7 @@
                 </th>
                 <th>
                     <div class="header-content">
-                        <span class="header-label">Priority</span>
+                        <span class="header-label">Priority <span class="sort-icon" data-column="priority" data-order="none">⇅</span></span>
                         <input type="text" class="header-search" placeholder="Search..." data-column="2">
                     </div>
                 </th>
@@ -413,7 +427,7 @@
                 </th>
                 <th>
                     <div class="header-content">
-                        <span class="header-label">Feature/Entity</span>
+                        <span class="header-label">Feature/Entity <span class="sort-icon" data-column="feature" data-order="none">⇅</span></span>
                         <input type="text" class="header-search" placeholder="Search..." data-column="5">
                     </div>
                 </th>
@@ -437,7 +451,7 @@
                 </th>
                 <th>
                     <div class="header-content">
-                        <span class="header-label">Status</span>
+                        <span class="header-label">Status <span class="sort-icon" data-column="isAutomated" data-order="none">⇅</span></span>
                         <input type="text" class="header-search" placeholder="Search..." data-column="9">
                     </div>
                 </th>
@@ -452,6 +466,9 @@
     let featureChartInstance = null;
     let currentChartType = 'pie'; // 'pie' or 'bar'
     let storedTestsData = null; // Store tests data for chart toggling
+    let currentTests = []; // Store current tests for sorting
+    let currentSortColumn = null;
+    let currentSortOrder = 'none';
     
     // ==================== THEME MANAGEMENT ====================
     
@@ -1016,7 +1033,7 @@
         
         return `
             <tr class="${rowClass}">
-                <td><strong>${test.test_id}</strong>${skippedLabel}</td>
+                <td><strong>${test.test_id}</strong><br>${skippedLabel}</td>
                 <td>${test.title || '-'}</td>
                 <td><span class="priority-label">${test.priority}</span></td>
                 <td>${tagHtml}</td>
@@ -1050,6 +1067,131 @@
         console.log(`Rendered ${tests.length} tests to table`);
     }
 
+    /**
+     * Sort tests by column
+     * @param {string} column - Column name to sort by
+     * @param {string} order - Sort order: 'asc' or 'desc'
+     */
+    function sortTests(column, order) {
+        if (!storedTestsData || storedTestsData.length === 0) return;
+        
+        const sortedTests = [...storedTestsData];
+        
+        sortedTests.sort((a, b) => {
+            let valueA, valueB;
+            
+            switch(column) {
+                case 'priority':
+                    // Priority order: P0 > P1 > P2 > P3
+                    const priorityOrder = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3 };
+                    valueA = priorityOrder[a.priority] !== undefined ? priorityOrder[a.priority] : 999;
+                    valueB = priorityOrder[b.priority] !== undefined ? priorityOrder[b.priority] : 999;
+                    break;
+                    
+                case 'feature':
+                    valueA = (a.type || '').toLowerCase();
+                    valueB = (b.type || '').toLowerCase();
+                    break;
+                    
+                case 'isAutomated':
+                    // Consider skipped tests as manual
+                    const isAutomatedA = a.isSkipped ? false : a.isAutomated;
+                    const isAutomatedB = b.isSkipped ? false : b.isAutomated;
+                    valueA = isAutomatedA ? 0 : 1; // Automated first
+                    valueB = isAutomatedB ? 0 : 1;
+                    break;
+                    
+                default:
+                    return 0;
+            }
+            
+            // Compare values
+            if (valueA < valueB) return order === 'asc' ? -1 : 1;
+            if (valueA > valueB) return order === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        currentTests = sortedTests;
+        renderTestTable(sortedTests);
+        
+        // Re-apply filters if any are active
+        const searchInputs = document.querySelectorAll('.header-search');
+        const hasActiveFilters = Array.from(searchInputs).some(input => input.value.length > 0);
+        if (hasActiveFilters) {
+            const filters = Array.from(searchInputs).map(input => ({
+                column: parseInt(input.dataset.column),
+                value: input.value.toLowerCase()
+            }));
+            applyFiltersToTable(filters, document.getElementById('test-table-body'));
+        }
+    }
+
+    /**
+     * Setup sort icons click handlers
+     */
+    function setupSortHandlers() {
+        const sortIcons = document.querySelectorAll('.sort-icon');
+        
+        sortIcons.forEach(icon => {
+            icon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                const column = icon.dataset.column;
+                let order = icon.dataset.order;
+                
+                // Reset all other sort icons
+                sortIcons.forEach(otherIcon => {
+                    if (otherIcon !== icon) {
+                        otherIcon.dataset.order = 'none';
+                        otherIcon.textContent = '⇅';
+                        otherIcon.classList.remove('active');
+                    }
+                });
+                
+                // Toggle current sort order
+                if (order === 'none') {
+                    order = 'asc';
+                    icon.textContent = '↑';
+                } else if (order === 'asc') {
+                    order = 'desc';
+                    icon.textContent = '↓';
+                } else {
+                    order = 'none';
+                    icon.textContent = '⇅';
+                    icon.dataset.order = 'none';
+                    icon.classList.remove('active');
+                    currentSortColumn = null;
+                    currentSortOrder = 'none';
+                    
+                    // Restore original order
+                    currentTests = [...storedTestsData];
+                    renderTestTable(currentTests);
+                    
+                    // Re-apply filters if any are active
+                    const searchInputs = document.querySelectorAll('.header-search');
+                    const hasActiveFilters = Array.from(searchInputs).some(input => input.value.length > 0);
+                    if (hasActiveFilters) {
+                        const filters = Array.from(searchInputs).map(input => ({
+                            column: parseInt(input.dataset.column),
+                            value: input.value.toLowerCase()
+                        }));
+                        applyFiltersToTable(filters, document.getElementById('test-table-body'));
+                    }
+                    return;
+                }
+                
+                icon.dataset.order = order;
+                icon.classList.add('active');
+                currentSortColumn = column;
+                currentSortOrder = order;
+                
+                sortTests(column, order);
+            });
+        });
+        
+        console.log('Sort handlers setup complete');
+    }
+
     // ==================== FILTERING ====================
     
     /**
@@ -1077,6 +1219,7 @@
                     }
                 }
             }
+        setupSortHandlers();
             
             row.style.display = showRow ? '' : 'none';
             if (showRow) visibleCount++;
@@ -1197,6 +1340,7 @@
         await loadDashboard();
         setupColumnFilters();
         setupChartToggle();
+        setupSortHandlers();
     }
 
     // Start the application
