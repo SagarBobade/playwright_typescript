@@ -267,6 +267,18 @@
             max-height: 147px;
             align-self: flex-start;
         }
+        .search-result-count {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .search-result-count span {
+            color: var(--text-primary);
+            font-weight: bold;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -312,6 +324,10 @@
     
     <div id="shadow-alert" style="display:none; background:#e74c3c; color:white; padding:10px; border-radius:5px; margin-bottom:20px;">
         ⚠️ Shadow tests detected: <span id="shadow-list"></span>
+    </div>
+
+    <div class="search-result-count" id="search-result-count" style="display:none;">
+        Showing <span id="visible-count">0</span> of <span id="total-count">0</span> tests
     </div>
 
     <table id="test-table">
@@ -835,6 +851,10 @@
             tableBody.innerHTML += generateTestRow(test);
         });
         
+        // Update counts
+        document.getElementById('total-count').textContent = tests.length;
+        document.getElementById('visible-count').textContent = tests.length;
+        
         console.log(`Rendered ${tests.length} tests to table`);
     }
 
@@ -847,6 +867,7 @@
      */
     function applyFiltersToTable(filters, tbody) {
         const rows = tbody.getElementsByTagName('tr');
+        let visibleCount = 0;
         
         for (let row of rows) {
             let showRow = true;
@@ -866,7 +887,11 @@
             }
             
             row.style.display = showRow ? '' : 'none';
+            if (showRow) visibleCount++;
         }
+        
+        // Update search result count
+        document.getElementById('visible-count').textContent = visibleCount;
     }
 
     /**
@@ -875,14 +900,23 @@
     function setupColumnFilters() {
         const searchInputs = document.querySelectorAll('.header-search');
         const tbody = document.getElementById('test-table-body');
+        const searchResultCount = document.getElementById('search-result-count');
         
         function applyAllFilters() {
             const filters = Array.from(searchInputs).map(input => ({
                 column: parseInt(input.dataset.column),
                 value: input.value.toLowerCase()
             }));
-        initializeTheme();
-        setupThemeToggle();
+            
+            // Check if any filter has a value
+            const hasActiveFilters = filters.some(filter => filter.value.length > 0);
+            
+            // Show/hide search result count
+            if (hasActiveFilters) {
+                searchResultCount.style.display = 'block';
+            } else {
+                searchResultCount.style.display = 'none';
+            }
             
             applyFiltersToTable(filters, tbody);
         }
