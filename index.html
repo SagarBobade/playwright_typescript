@@ -260,6 +260,66 @@
             color: var(--text-primary);
             font-weight: bold;
         }
+        .header-content {
+            position: relative;
+        }
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .clear-icon {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #888;
+            font-size: 14px;
+            padding: 2px 5px;
+            display: none;
+            user-select: none;
+            z-index: 10;
+        }
+        .clear-icon:hover {
+            color: #e74c3c;
+        }
+        .clear-icon.show {
+            display: block;
+        }
+        .header-search.dropdown-enabled {
+            padding-right: 25px;
+        }
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+        .search-dropdown.show {
+            display: block;
+        }
+        .dropdown-item {
+            padding: 8px 10px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .dropdown-item:hover {
+            background: var(--bg-hover);
+        }
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
         .chart-container {
             flex: 0 0 480px;
             background: var(--bg-secondary);
@@ -644,13 +704,21 @@
                 <th>
                     <div class="header-content">
                         <span class="header-label">Priority <span class="sort-icon" data-column="priority" data-order="none">⇅</span></span>
-                        <input type="text" class="header-search" placeholder="Search..." data-column="2">
+                        <div class="input-wrapper">
+                            <input type="text" class="header-search dropdown-enabled" placeholder="Search..." data-column="2" readonly>
+                            <span class="clear-icon" data-column="2">✕</span>
+                        </div>
+                        <div class="search-dropdown" data-column="2"></div>
                     </div>
                 </th>
                 <th>
                     <div class="header-content">
                         <span class="header-label">Tags</span>
-                        <input type="text" class="header-search" placeholder="Search..." data-column="3">
+                        <div class="input-wrapper">
+                            <input type="text" class="header-search dropdown-enabled" placeholder="Search..." data-column="3" readonly>
+                            <span class="clear-icon" data-column="3">✕</span>
+                        </div>
+                        <div class="search-dropdown" data-column="3"></div>
                     </div>
                 </th>
                 <th>
@@ -662,7 +730,11 @@
                 <th>
                     <div class="header-content">
                         <span class="header-label">Feature/Entity <span class="sort-icon" data-column="feature" data-order="none">⇅</span></span>
-                        <input type="text" class="header-search" placeholder="Search..." data-column="5">
+                        <div class="input-wrapper">
+                            <input type="text" class="header-search dropdown-enabled" placeholder="Search..." data-column="5" readonly>
+                            <span class="clear-icon" data-column="5">✕</span>
+                        </div>
+                        <div class="search-dropdown" data-column="5"></div>
                     </div>
                 </th>
                 <th>
@@ -686,7 +758,11 @@
                 <th>
                     <div class="header-content">
                         <span class="header-label">Status <span class="sort-icon" data-column="isAutomated" data-order="none">⇅</span></span>
-                        <input type="text" class="header-search" placeholder="Search..." data-column="9">
+                        <div class="input-wrapper">
+                            <input type="text" class="header-search dropdown-enabled" placeholder="Search..." data-column="9" readonly>
+                            <span class="clear-icon" data-column="9">✕</span>
+                        </div>
+                        <div class="search-dropdown" data-column="9"></div>
                     </div>
                 </th>
             </tr>
@@ -1507,10 +1583,141 @@
         }
         
         searchInputs.forEach(input => {
-            input.addEventListener('keyup', applyAllFilters);
+            if (!input.classList.contains('dropdown-enabled')) {
+                input.addEventListener('keyup', applyAllFilters);
+            }
         });
         
         console.log('Column filters setup complete');
+    }
+
+    /**
+     * Populate dropdown with unique values from column
+     */
+    function populateDropdown(columnIndex) {
+        if (!storedTestsData) return;
+        
+        const uniqueValues = new Set();
+        
+        storedTestsData.forEach(test => {
+            let value;
+            switch(columnIndex) {
+                case 2: // Priority
+                    value = test.priority;
+                    break;
+                case 3: // Tags
+                    if (test.tags && test.tags.length > 0) {
+                        test.tags.forEach(tag => uniqueValues.add(tag));
+                    }
+                    return; // Continue to next test
+                case 5: // Feature/Entity
+                    value = test.type;
+                    break;
+                case 9: // Status
+                    value = test.isSkipped ? 'MANUAL' : (test.isAutomated ? 'AUTOMATED' : 'MANUAL');
+                    break;
+            }
+            if (value) uniqueValues.add(value);
+        });
+        
+        return Array.from(uniqueValues).sort();
+    }
+
+    /**
+     * Setup dropdown filters for specific columns
+     */
+    function setupDropdownFilters() {
+        const dropdownInputs = document.querySelectorAll('.header-search.dropdown-enabled');
+        
+        dropdownInputs.forEach(input => {
+            const columnIndex = parseInt(input.dataset.column);
+            const dropdown = input.parentElement.parentElement.querySelector('.search-dropdown');
+            
+            // Populate dropdown on click
+            input.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.search-dropdown.show').forEach(dd => {
+                    if (dd !== dropdown) dd.classList.remove('show');
+                });
+                
+                // Toggle current dropdown
+                if (!dropdown.classList.contains('show')) {
+                    const values = populateDropdown(columnIndex);
+                    dropdown.innerHTML = '';
+                    
+                    // Add value options (no clear option)
+                    values.forEach(value => {
+                        const item = document.createElement('div');
+                        item.className = 'dropdown-item';
+                        item.textContent = value;
+                        item.addEventListener('click', () => {
+                            input.value = value;
+                            dropdown.classList.remove('show');
+                            // Show clear icon
+                            const clearIcon = input.parentElement.querySelector('.clear-icon');
+                            if (clearIcon) clearIcon.classList.add('show');
+                            applyAllFilters();
+                        });
+                        dropdown.appendChild(item);
+                    });
+                    
+                    dropdown.classList.add('show');
+                } else {
+                    dropdown.classList.remove('show');
+                }
+            });
+        });
+        
+        // Setup clear icon functionality
+        const clearIcons = document.querySelectorAll('.clear-icon');
+        clearIcons.forEach(icon => {
+            icon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const columnIndex = parseInt(icon.dataset.column);
+                const input = icon.parentElement.querySelector('.header-search');
+                const dropdown = icon.parentElement.parentElement.querySelector('.search-dropdown');
+                
+                input.value = '';
+                icon.classList.remove('show');
+                if (dropdown) dropdown.classList.remove('show');
+                applyAllFilters();
+            });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.header-content')) {
+                document.querySelectorAll('.search-dropdown.show').forEach(dd => {
+                    dd.classList.remove('show');
+                });
+            }
+        });
+        
+        // Helper function to apply all filters
+        function applyAllFilters() {
+            const searchInputs = document.querySelectorAll('.header-search');
+            const tbody = document.getElementById('test-table-body');
+            const searchResultCount = document.getElementById('search-result-count');
+            
+            const filters = Array.from(searchInputs).map(input => ({
+                column: parseInt(input.dataset.column),
+                value: input.value.toLowerCase()
+            }));
+            
+            const hasActiveFilters = filters.some(filter => filter.value.length > 0);
+            
+            if (hasActiveFilters) {
+                searchResultCount.style.display = 'block';
+            } else {
+                searchResultCount.style.display = 'none';
+            }
+            
+            applyFiltersToTable(filters, tbody);
+        }
+        
+        console.log('Dropdown filters setup complete');
     }
 
     /**
@@ -1568,6 +1775,7 @@
             // Render UI
             renderStatistics(stats);
             renderShadowAlert(stats);
+            currentTests = tests; // Store tests for sorting
             renderTestTable(tests);
             renderFeatureChart(tests);
             
@@ -1589,6 +1797,7 @@
         setupDashboardToggle();
         await loadDashboard();
         setupColumnFilters();
+        setupDropdownFilters();
         setupChartToggle();
         setupSortHandlers();
     }
