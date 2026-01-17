@@ -7,8 +7,10 @@ import { createNewProductionResource, getResourceTypeExcept } from "../../../../
 test.describe.serial("ProductionPlanning", { tag: ["@planningApp", "@sanity", "@workspace", "@resource"] }, () => {
    
 
-
-    // @feature resource
+/*
+    * @feature resource
+    * @priority P1
+    */
     test("TC-1: Able to create a Resource for an existing production plan.", { tag: ["@planningApp", "@sanity", "@workspace", "@resource"] },
         async ({ planningApp }) => {
          const requiredRecord = gridData[record];

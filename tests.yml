@@ -1,6 +1,6 @@
 - test_id: TC-1
   title: Able to create a Resource for an existing production plan.
-  priority: null
+  priority: P1
   tags:
     - planningApp
     - sanity
